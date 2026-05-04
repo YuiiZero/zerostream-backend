@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+coverage/
+
+# lock files (не форматируются)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# env
+.env
+.env.*
+
+# logs
+*.log
+
+# misc
+*.tsbuildinfo
+
+# prisma
+prisma/migrations/
+
+# uploads / runtime data
+uploads/
+tmp/
+temp/
+
+# docker
+docker-data/
+
+# generated code
+src/generated/
