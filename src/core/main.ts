@@ -1,9 +1,17 @@
+import { ConfigService } from '@nestjs/config'
 import { NestFactory } from '@nestjs/core'
+import session from 'express-session'
 
+import { getSessionConfig } from './conf/getSessionConfig'
 import { CoreModule } from './core.module'
+import { RedisService } from './module/redis/redis.service'
 
 async function bootstrap() {
 	const app = await NestFactory.create(CoreModule)
-	await app.listen(process.env.PORT ?? 3000)
+	const config = app.get(ConfigService)
+	const redis = app.get(RedisService)
+
+	app.use(session(getSessionConfig(config, redis.getStore())))
+	await app.listen(config.getOrThrow<number>('APPLICATION_PORT'))
 }
 bootstrap()
