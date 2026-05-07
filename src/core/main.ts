@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config'
 import { NestFactory } from '@nestjs/core'
+import cookieParser from 'cookie-parser'
 import session from 'express-session'
 
 import { getSessionConfig } from './conf/getSessionConfig'
@@ -11,7 +12,11 @@ async function bootstrap() {
 	const config = app.get(ConfigService)
 	const redis = app.get(RedisService)
 
-	app.use(session(getSessionConfig(config, redis.getStore())))
+	app.use(
+		cookieParser(config.getOrThrow<string>('SESSION_SECRET')),
+		session(getSessionConfig(config, redis.getStore()))
+	)
+
 	await app.listen(config.getOrThrow<number>('APPLICATION_PORT'))
 }
 bootstrap()
