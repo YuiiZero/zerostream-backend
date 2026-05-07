@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core'
 import cookieParser from 'cookie-parser'
 import session from 'express-session'
 
+import { getCorsConfig } from './conf/getCorsConf'
 import { getSessionConfig } from './conf/getSessionConfig'
 import { CoreModule } from './core.module'
 import { RedisService } from './module/redis/redis.service'
@@ -16,6 +17,8 @@ async function bootstrap() {
 		cookieParser(config.getOrThrow<string>('SESSION_SECRET')),
 		session(getSessionConfig(config, redis.getStore()))
 	)
+
+	app.enableCors(getCorsConfig(config))
 
 	await app.listen(config.getOrThrow<number>('APPLICATION_PORT'))
 }
