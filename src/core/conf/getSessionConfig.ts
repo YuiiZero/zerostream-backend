@@ -1,17 +1,22 @@
 import { ConfigService } from '@nestjs/config'
 import { CookieOptions, SessionOptions, Store } from 'express-session'
+import { StringValue } from 'ms'
 
 import { isDev as isDevEnv } from '../../shared/util/isDev.util'
+import { TimeConverter } from '../../shared/util/TimeConverter.util'
 
 export function getSessionConfig(
 	configService: ConfigService,
+	timeConverter: TimeConverter,
 	store: Store
 ): SessionOptions {
 	const isDev = isDevEnv(configService)
 	const cookieOpts: CookieOptions = {
 		httpOnly: !isDev,
 		secure: !isDev,
-		maxAge: configService.getOrThrow<number>('SESSION_TTL_S'),
+		maxAge: timeConverter.getSeconds(
+			configService.getOrThrow<StringValue>('SESSION_TTL')
+		),
 		sameSite: 'lax'
 	}
 

@@ -3,6 +3,8 @@ import { NestFactory } from '@nestjs/core'
 import cookieParser from 'cookie-parser'
 import session from 'express-session'
 
+import { TimeConverter } from '../shared/util/TimeConverter.util'
+
 import { getCorsConfig } from './conf/getCorsConf'
 import { getSessionConfig } from './conf/getSessionConfig'
 import { CoreModule } from './core.module'
@@ -12,10 +14,11 @@ async function bootstrap() {
 	const app = await NestFactory.create(CoreModule)
 	const config = app.get(ConfigService)
 	const redis = app.get(RedisService)
+	const timeConverter = app.get(TimeConverter)
 
 	app.use(
 		cookieParser(config.getOrThrow<string>('SESSION_SECRET')),
-		session(getSessionConfig(config, redis.getStore()))
+		session(getSessionConfig(config, timeConverter, redis.getStore()))
 	)
 
 	app.enableCors(getCorsConfig(config))
