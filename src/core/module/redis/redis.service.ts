@@ -29,7 +29,7 @@ export class RedisService {
 
 		this.store = new RedisStore({
 			client: this,
-			prefix: 'sess:'
+			prefix: this.configService.getOrThrow<string>('REDIS_PREFIX')
 		})
 
 		return this.store
