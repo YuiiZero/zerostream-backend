@@ -3,8 +3,9 @@ import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { GraphQLModule } from '@nestjs/graphql'
 
-import { UserController } from '../module/user/user.controller'
-import { UserService } from '../module/user/user.service'
+import { AccountResolver } from '../module/auth/account/account.resolver'
+import { AccountService } from '../module/auth/account/account.service'
+import { TimeConverter } from '../shared/util/TimeConverter.util'
 
 import { getGraphqlConf } from './conf/getGraphqlConf'
 import { PrismaModule } from './module/prisma/prisma.module'
@@ -26,7 +27,6 @@ import { RedisModule } from './module/redis/redis.module'
 			inject: [ConfigService]
 		})
 	],
-	controllers: [UserController],
-	providers: [UserService]
+	providers: [AccountResolver, AccountService, TimeConverter]
 })
 export class CoreModule {}
