@@ -67,7 +67,14 @@ export default defineConfig([
 			'no-var': 'warn',
 
 			'arrow-parens': ['warn', 'as-needed'],
-			'comma-dangle': ['warn', 'never']
+			'comma-dangle': ['warn', 'never'],
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{
+					argsIgnorePattern: '^_',
+					varsIgnorePattern: '^_'
+				}
+			]
 		}
 	}
 ])
