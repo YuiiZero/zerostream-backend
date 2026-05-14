@@ -1,20 +1,25 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { RedisStore } from 'connect-redis'
-import Redis from 'ioredis'
-
-import { isDev } from '../../../shared/util/isDev.util'
+import { createClient, RedisClientType } from 'redis'
 
 @Injectable()
 export class RedisService {
-	client: Redis
+	client: RedisClientType
 	store?: RedisStore
 
 	constructor(private configService: ConfigService) {
-		this.client = new Redis({
-			host: isDev(configService)
-				? 'localhost'
-				: configService.getOrThrow<string>('REDIS_HOST')
+		this.client = createClient({
+			socket: {
+				host: configService.getOrThrow<string>('REDIS_HOST'),
+				port: configService.getOrThrow<number>('REDIS_PORT')
+			}
+		})
+
+		this.client.connect()
+
+		this.client.on('error', e => {
+			console.error(e)
 		})
 	}
 
@@ -28,7 +33,7 @@ export class RedisService {
 		}
 
 		this.store = new RedisStore({
-			client: this,
+			client: this.client,
 			prefix: this.configService.getOrThrow<string>('REDIS_PREFIX')
 		})
 
