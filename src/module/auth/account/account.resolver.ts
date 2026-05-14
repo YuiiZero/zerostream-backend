@@ -5,6 +5,7 @@ import { Response } from 'express'
 import type { Session, SessionData } from 'express-session'
 
 import { User } from '../../../../prisma/generated/prisma/client'
+import { Authorization } from '../../../shared/decorator/authorization.decorator'
 import { UserModel } from '../../../shared/model/user.model'
 import { LoginPipe } from '../../../shared/pipe/login.pipe'
 import { Ctx } from '../../../shared/types/type'
@@ -44,12 +45,14 @@ export class AccountResolver {
 		return await this.saveSession(req.session, user)
 	}
 
+	@Authorization()
 	@Mutation(() => Boolean)
 	async logout(@Context() { req, res }: Ctx) {
 		const response = await this.destroySession(req.session, res)
 		return response
 	}
 
+	@Authorization()
 	@Query(() => UserModel, { nullable: true })
 	me(@Context() { req }: Ctx) {
 		return req.session.user
