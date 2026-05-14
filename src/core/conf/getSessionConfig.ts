@@ -12,9 +12,9 @@ export function getSessionConfig(
 ): SessionOptions {
 	const isDev = isDevEnv(configService)
 	const cookieOpts: CookieOptions = {
-		httpOnly: !isDev,
+		httpOnly: isDev,
 		secure: !isDev,
-		maxAge: timeConverter.getSeconds(
+		maxAge: timeConverter.getMilliseconds(
 			configService.getOrThrow<StringValue>('SESSION_TTL')
 		),
 		sameSite: 'lax'
