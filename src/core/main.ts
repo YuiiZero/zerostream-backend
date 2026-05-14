@@ -1,3 +1,4 @@
+import { ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { NestFactory } from '@nestjs/core'
 import cookieParser from 'cookie-parser'
@@ -20,6 +21,8 @@ async function bootstrap() {
 		cookieParser(config.getOrThrow<string>('SESSION_SECRET')),
 		session(getSessionConfig(config, timeConverter, redis.getStore()))
 	)
+
+	app.useGlobalPipes(new ValidationPipe())
 
 	app.enableCors(getCorsConfig(config))
 
