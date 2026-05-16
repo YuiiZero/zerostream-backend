@@ -2,6 +2,15 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type CookieModel {
+  expires: String!
+  httpOnly: Boolean!
+  originalMaxAge: Int!
+  path: String!
+  sameSite: String!
+  secure: Boolean!
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
@@ -20,6 +29,7 @@ type Mutation {
 }
 
 type Query {
+  getCurrentSession: SessionModel!
   me: UserModel
 }
 
@@ -32,6 +42,11 @@ input RegisterInput {
   username: String!
 }
 
+type SessionModel {
+  cookie: CookieModel!
+  user: UserModel!
+}
+
 type UserModel {
   avatar: String
   bio: String
@@ -39,6 +54,7 @@ type UserModel {
   email: String!
   id: String!
   nickname: String
+  sessionIDs: [String!]!
   updatedAt: DateTime!
   username: String!
 }
