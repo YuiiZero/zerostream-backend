@@ -5,6 +5,8 @@ import { GraphQLModule } from '@nestjs/graphql'
 
 import { AccountResolver } from '../module/auth/account/account.resolver'
 import { AccountService } from '../module/auth/account/account.service'
+import { SessionResolver } from '../module/auth/session/session.resolver'
+import { SessionService } from '../module/auth/session/session.service'
 import { TimeConverter } from '../shared/util/TimeConverter.util'
 
 import { getGraphqlConf } from './conf/getGraphqlConf'
@@ -17,7 +19,7 @@ import { RedisModule } from './module/redis/redis.module'
 		ConfigModule.forRoot({
 			isGlobal: true,
 			// ignoreEnvFile: !IS_DEV,
-			envFilePath: '.env.dev'
+			envFilePath: '.env'
 		}),
 		RedisModule,
 		GraphQLModule.forRootAsync<ApolloDriverConfig>({
@@ -27,6 +29,12 @@ import { RedisModule } from './module/redis/redis.module'
 			inject: [ConfigService]
 		})
 	],
-	providers: [AccountResolver, AccountService, TimeConverter]
+	providers: [
+		AccountResolver,
+		AccountService,
+		TimeConverter,
+		SessionResolver,
+		SessionService
+	]
 })
 export class CoreModule {}

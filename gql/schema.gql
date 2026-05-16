@@ -29,6 +29,7 @@ type Mutation {
 }
 
 type Query {
+  getAllCurrentUserSessions: [SessionModel!]!
   getCurrentSession: SessionModel!
   me: UserModel
 }
