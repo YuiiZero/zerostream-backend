@@ -25,4 +25,7 @@ export class UserModel {
 
 	@Field(() => String, { nullable: true })
 	avatar!: string | null
+
+	@Field(() => [String])
+	sessionIDs!: string[]
 }
