@@ -8,7 +8,7 @@ export function getGraphqlConf(
 	configService: ConfigService
 ): Omit<ApolloDriverConfig, 'driver'> {
 	return {
-		playground: false,
+		playground: true,
 		autoSchemaFile: join(process.cwd(), 'gql', 'schema.gql'),
 		sortSchema: true,
 		context: ({ req, res }: Ctx) => ({ req, res }),
