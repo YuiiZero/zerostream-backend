@@ -1,7 +1,7 @@
 import { Field, GraphQLISODateTime, ObjectType } from '@nestjs/graphql'
 
 @ObjectType()
-export class UserModel {
+export class SessionUserModel {
 	@Field()
 	id!: string
 
@@ -10,9 +10,6 @@ export class UserModel {
 
 	@Field(() => GraphQLISODateTime)
 	updatedAt!: Date
-
-	@Field()
-	email!: string
 
 	@Field()
 	username!: string
@@ -25,6 +22,12 @@ export class UserModel {
 
 	@Field(() => String, { nullable: true })
 	avatar!: string | null
+}
+
+@ObjectType()
+export class UserModel extends SessionUserModel {
+	@Field()
+	email!: string
 
 	@Field(() => [String])
 	sessionIDs!: string[]
