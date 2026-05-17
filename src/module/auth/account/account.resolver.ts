@@ -3,7 +3,9 @@ import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql'
 
 import { Authorization } from '../../../shared/decorator/authorization.decorator'
 import { CurrentUser } from '../../../shared/decorator/current-user.decorator'
+import { Ip } from '../../../shared/decorator/ip.decorator'
 import { Unauthorized } from '../../../shared/decorator/unauthorized.decorator'
+import { UserAgent } from '../../../shared/decorator/user-agent.decorator'
 import { UserModel } from '../../../shared/model/user.model'
 import { LoginPipe } from '../../../shared/pipe/login.pipe'
 import { Ctx } from '../../../shared/types/type'
@@ -30,10 +32,18 @@ export class AccountResolver {
 	async register(
 		@Context() { req }: Ctx,
 		@Args('registerCredentials')
-		registerInput: RegisterInput
+		registerInput: RegisterInput,
+		@UserAgent() userAgent: string,
+		@Ip() userIp: string
 	) {
 		const user = await this.accountService.register(registerInput)
-		return await this.sessionService.saveSession(req, req.session, user)
+		return await this.sessionService.saveSession(
+			req,
+			req.session,
+			user,
+			userAgent,
+			userIp
+		)
 	}
 
 	@Unauthorized()
@@ -41,10 +51,18 @@ export class AccountResolver {
 	async login(
 		@Context() { req }: Ctx,
 		@Args('loginCredentials', LoginPipe)
-		loginInput: LoginInput
+		loginInput: LoginInput,
+		@UserAgent() userAgent: string,
+		@Ip() userIp: string
 	) {
 		const user = await this.accountService.login(loginInput)
-		return await this.sessionService.saveSession(req, req.session, user)
+		return await this.sessionService.saveSession(
+			req,
+			req.session,
+			user,
+			userAgent,
+			userIp
+		)
 	}
 
 	@Authorization()
@@ -61,7 +79,7 @@ export class AccountResolver {
 
 	@Authorization()
 	@Query(() => UserModel, { nullable: true })
-	me(@Context() { req }: Ctx) {
-		return req.session.user
+	async me(@CurrentUser() user: UserModel) {
+		return user
 	}
 }

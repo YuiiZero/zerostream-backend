@@ -9,6 +9,7 @@ import { User } from '../../../../prisma/generated/prisma/client'
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
 import { RedisService } from '../../../core/module/redis/redis.service'
 import { UserModel } from '../../../shared/model/user.model'
+import { getSessionMetadata } from '../../../shared/util/getSessionMetadata'
 
 @Injectable()
 export class SessionService {
@@ -50,9 +51,11 @@ export class SessionService {
 	saveSession(
 		req: Request,
 		session: Session & Partial<SessionData>,
-		user: UserModel
+		user: UserModel,
+		userAgent: string,
+		ip: string
 	): Promise<Omit<User, 'password'>> {
-		return this._pushSession(req, session, user).then(
+		return this._pushSession(req, session, user, userAgent, ip).then(
 			() =>
 				new Promise((resolve, reject) => {
 					session.save(err => {
@@ -88,6 +91,7 @@ export class SessionService {
 			() =>
 				new Promise((resolve, reject) => {
 					session.user = null
+					session.metadata = null
 
 					session.destroy((err: unknown) => {
 						if (err)
@@ -108,9 +112,17 @@ export class SessionService {
 	private async _pushSession(
 		req: Request,
 		session: Session & Partial<SessionData>,
-		user: UserModel
+		user: UserModel,
+		userAgent: string,
+		ip: string
 	) {
 		session.user = user
+		session.metadata = await getSessionMetadata(
+			this.configService,
+			userAgent,
+			ip
+		)
+		console.log(session.metadata)
 
 		if (!session.user.sessionIDs)
 			session.user.sessionIDs = await this._dbFetchUserSessions(user)
