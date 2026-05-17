@@ -2,8 +2,28 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type ClientModel {
+  engineVersion: String
+  name: String!
+  type: String!
+  url: String
+  version: String!
+}
+
+type ConnectionModel {
+  asn: Int
+  carrier: String
+  home: Boolean
+  isic_code: String
+  isp: String
+  naics_code: String
+  organization_type: String
+  sld: String
+  tld: String
+}
+
 type CookieModel {
-  expires: String!
+  expires: DateTime!
   httpOnly: Boolean!
   originalMaxAge: Int!
   path: String!
@@ -11,10 +31,70 @@ type CookieModel {
   secure: Boolean!
 }
 
+type CurrencyModel {
+  code: String!
+  name: String!
+  plural: String!
+  symbol: String!
+  symbol_native: String!
+}
+
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
 scalar DateTime
+
+type DeviceMetadataModel {
+  client: ClientModel
+  device: DeviceModel
+  os: OsModel
+}
+
+type DeviceModel {
+  brand: String!
+  model: String!
+  type: String!
+}
+
+type LanguagesModel {
+  code: String!
+  name: String!
+  native: String!
+}
+
+type LocationDetailsModel {
+  city: String
+  connection: ConnectionModel!
+  connection_type: String
+  continent_code: String!
+  continent_name: String!
+  country_code: String!
+  country_name: String!
+  currency: CurrencyModel!
+  dma: String
+  ip: String!
+  ip_routing_type: String
+  latitude: Float
+  location: LocationModel!
+  longitude: Float
+  msa: String
+  radius: String
+  region_code: String
+  time_zone: TimeZoneModel!
+  type: String!
+  zip: String
+}
+
+type LocationModel {
+  calling_code: String
+  capital: String
+  country_flag: String
+  country_flag_emoji: String
+  country_flag_emoji_unicode: String
+  geoname_id: Int!
+  is_eu: Boolean
+  languages: [LanguagesModel!]!
+}
 
 input LoginInput {
   email: String
@@ -28,9 +108,16 @@ type Mutation {
   register(registerCredentials: RegisterInput!): UserModel!
 }
 
+type OsModel {
+  name: String!
+  platform: String!
+  version: String!
+}
+
 type Query {
   getAllCurrentUserSessions: [SessionModel!]!
   getCurrentSession: SessionModel!
+  getSessionMetadata: SessionMetadataModel!
   me: UserModel
 }
 
@@ -43,9 +130,34 @@ input RegisterInput {
   username: String!
 }
 
+type SessionMetadataModel {
+  device: DeviceMetadataModel!
+  ip: String!
+  locationDetails: LocationDetailsModel!
+}
+
 type SessionModel {
   cookie: CookieModel!
-  user: UserModel!
+  metadata: SessionMetadataModel!
+  user: SessionUserModel!
+}
+
+type SessionUserModel {
+  avatar: String
+  bio: String
+  createdAt: DateTime!
+  id: String!
+  nickname: String
+  updatedAt: DateTime!
+  username: String!
+}
+
+type TimeZoneModel {
+  code: String!
+  current_time: String!
+  gmt_offset: Int!
+  id: String!
+  is_daylight_saving: Boolean!
 }
 
 type UserModel {
