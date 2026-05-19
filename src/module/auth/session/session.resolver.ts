@@ -25,8 +25,11 @@ export class SessionResolver {
 
 	@Authorization()
 	@Query(() => [SessionModel])
-	getAllCurrentUserSessions(@CurrentUser() user: UserModel) {
-		return this.sessionService.getAllCurrentUserSessions(user)
+	getAllCurrentUserSessions(
+		@CurrentUser() user: UserModel,
+		@Context() { req }: Ctx
+	) {
+		return this.sessionService.getAllCurrentUserSessions(user, req.session)
 	}
 
 	@Authorization()

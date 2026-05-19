@@ -25,8 +25,13 @@ export class SessionService {
 		this.redisClient = redisService.getClient()
 	}
 
-	async getAllCurrentUserSessions(user: UserModel) {
-		const { sessionIDs } = user
+	async getAllCurrentUserSessions(
+		user: UserModel,
+		session: Session & Partial<SessionData>
+	) {
+		let { userSessions: sessionIDs } = session
+		if (!sessionIDs) sessionIDs = await this._dbFetchUserSessions(user)
+
 		const prefix = this.configService.getOrThrow<string>('REDIS_PREFIX')
 		const sessions: (Session & Partial<SessionData>)[] = await Promise.all(
 			sessionIDs.map(async sessionID => {
@@ -34,7 +39,6 @@ export class SessionService {
 				const sessionJson = await this.redisClient.GET(sessionKey)
 
 				if (sessionJson === null) {
-					// Can occur when postgres sessionIDs are desynchronized with redis sessionIDs
 					throw new InternalServerErrorException(
 						`Could not fetch user sessions: wrong key ${sessionKey}`
 					)
@@ -122,7 +126,6 @@ export class SessionService {
 			userAgent,
 			ip
 		)
-		console.log(session.metadata)
 
 		if (!session.user.sessionIDs)
 			session.user.sessionIDs = await this._dbFetchUserSessions(user)
