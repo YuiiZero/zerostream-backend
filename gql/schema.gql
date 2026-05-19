@@ -23,7 +23,7 @@ type ConnectionModel {
 }
 
 type CookieModel {
-  expires: DateTime!
+  expires: String!
   httpOnly: Boolean!
   originalMaxAge: Int!
   path: String!

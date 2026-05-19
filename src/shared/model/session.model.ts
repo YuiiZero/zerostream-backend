@@ -8,7 +8,7 @@ class CookieModel {
 	@Field(() => Int)
 	originalMaxAge!: number
 	@Field()
-	expires!: Date
+	expires!: string
 	@Field()
 	secure!: boolean
 	@Field()
