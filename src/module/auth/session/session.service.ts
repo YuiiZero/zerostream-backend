@@ -29,7 +29,7 @@ export class SessionService {
 		user: UserModel,
 		session: Session & Partial<SessionData>
 	) {
-		let { userSessions: sessionIDs } = session
+		let { sessionIDs } = session
 		if (!sessionIDs) sessionIDs = await this._dbFetchUserSessions(user)
 
 		const prefix = this.configService.getOrThrow<string>('REDIS_PREFIX')
