@@ -103,6 +103,7 @@ input LoginInput {
 }
 
 type Mutation {
+  deleteSessionById(sessionID: String!): Boolean!
   login(loginCredentials: LoginInput!): UserModel!
   logout: Boolean!
   register(registerCredentials: RegisterInput!): UserModel!

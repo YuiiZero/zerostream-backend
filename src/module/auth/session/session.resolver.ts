@@ -1,4 +1,4 @@
-import { Context, Query, Resolver } from '@nestjs/graphql'
+import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql'
 
 import { Authorization } from '../../../shared/decorator/authorization.decorator'
 import { CurrentUser } from '../../../shared/decorator/current-user.decorator'
@@ -36,5 +36,16 @@ export class SessionResolver {
 	@Query(() => SessionMetadataModel)
 	getSessionMetadata(@SessionMetadata() metadata: SessionMetadataType) {
 		return metadata
+	}
+
+	@Authorization()
+	@Mutation(() => Boolean)
+	deleteSessionById(
+		@Context() { req }: Ctx,
+		@CurrentUser() user: UserModel,
+		@Args('sessionID') sessionID: string
+	) {
+		this.sessionService.deleteSessionById(req, user, sessionID)
+		return true
 	}
 }

@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common'
+import {
+	ConflictException,
+	Injectable,
+	UnauthorizedException
+} from '@nestjs/common'
 import { InternalServerErrorException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { RedisClientType } from '@redis/client'
@@ -9,6 +13,7 @@ import { User } from '../../../../prisma/generated/prisma/client'
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
 import { RedisService } from '../../../core/module/redis/redis.service'
 import { UserModel } from '../../../shared/model/user.model'
+import { addSessionPrefix } from '../../../shared/util/addPrefix.util'
 import { getSessionMetadata } from '../../../shared/util/getSessionMetadata'
 
 @Injectable()
@@ -52,14 +57,14 @@ export class SessionService {
 		return sessions
 	}
 
-	saveSession(
+	saveCurrentSession(
 		req: Request,
 		session: Session & Partial<SessionData>,
 		user: UserModel,
 		userAgent: string,
 		ip: string
 	): Promise<Omit<User, 'password'>> {
-		return this._pushSession(req, session, user, userAgent, ip).then(
+		return this._pushCurrentSession(req, session, user, userAgent, ip).then(
 			() =>
 				new Promise((resolve, reject) => {
 					session.save(err => {
@@ -85,13 +90,13 @@ export class SessionService {
 		)
 	}
 
-	destroySession(
+	deleteCurrentSession(
 		req: Request,
 		session: Session & Partial<SessionData>,
 		res: Response,
 		user: UserModel
 	): Promise<boolean> {
-		return this._revokeSession(req, session, user).then(
+		return this._revokeSession(req.sessionID, user).then(
 			() =>
 				new Promise((resolve, reject) => {
 					session.user = null
@@ -113,7 +118,17 @@ export class SessionService {
 		)
 	}
 
-	private async _pushSession(
+	async deleteSessionById(req: Request, user: UserModel, sessionID: string) {
+		if (req.sessionID === sessionID)
+			throw new ConflictException(
+				'Unable to delete current session: use logout instead'
+			)
+
+		await this.redisClient.DEL(addSessionPrefix(sessionID, this.configService))
+		this._revokeSession(sessionID, user)
+	}
+
+	private async _pushCurrentSession(
 		req: Request,
 		session: Session & Partial<SessionData>,
 		user: UserModel,
@@ -134,21 +149,17 @@ export class SessionService {
 		session.user.sessionIDs = sessionIDs
 	}
 
-	private async _revokeSession(
-		req: Request,
-		session: Session & Partial<SessionData>,
-		user: UserModel
-	) {
-		if (!session.user) {
+	private async _revokeSession(sessionID: string, user: UserModel) {
+		if (!user) {
 			throw new UnauthorizedException('User is unauthorized')
 		}
 
-		if (!session.user.sessionIDs)
-			session.user.sessionIDs = await this._dbFetchUserSessions(user)
+		if (!user.sessionIDs)
+			user.sessionIDs = await this._dbFetchUserSessions(user)
 
-		const sessionIDs = await this._dbRevokeUserSessionById(user, req.sessionID)
+		const sessionIDs = await this._dbRevokeUserSessionById(user, sessionID)
 
-		session.user.sessionIDs = sessionIDs
+		user.sessionIDs = sessionIDs
 	}
 
 	// Database related methods

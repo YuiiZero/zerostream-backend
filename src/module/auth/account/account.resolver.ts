@@ -37,7 +37,7 @@ export class AccountResolver {
 		@Ip() userIp: string
 	) {
 		const user = await this.accountService.register(registerInput)
-		return await this.sessionService.saveSession(
+		return await this.sessionService.saveCurrentSession(
 			req,
 			req.session,
 			user,
@@ -56,7 +56,7 @@ export class AccountResolver {
 		@Ip() userIp: string
 	) {
 		const user = await this.accountService.login(loginInput)
-		return await this.sessionService.saveSession(
+		return await this.sessionService.saveCurrentSession(
 			req,
 			req.session,
 			user,
@@ -68,7 +68,7 @@ export class AccountResolver {
 	@Authorization()
 	@Mutation(() => Boolean)
 	async logout(@Context() { req, res }: Ctx, @CurrentUser() user: UserModel) {
-		const response = await this.sessionService.destroySession(
+		const response = await this.sessionService.deleteCurrentSession(
 			req,
 			req.session,
 			res,
