@@ -1,5 +1,6 @@
 import {
 	ConflictException,
+	ForbiddenException,
 	Injectable,
 	UnauthorizedException
 } from '@nestjs/common'
@@ -44,6 +45,9 @@ export class AccountService {
 		}
 
 		if (!found) throw new UnauthorizedException('Invalid credentials')
+
+		if (!found.isEmailVerified)
+			throw new ForbiddenException('Email is not verified')
 
 		const isPasswordVerified = await verify(found.password, password)
 

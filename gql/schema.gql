@@ -103,10 +103,10 @@ input LoginInput {
 }
 
 type Mutation {
-  deleteSessionById(sessionID: String!): Boolean!
-  login(loginCredentials: LoginInput!): UserModel!
+  deleteSession(sessionID: String!): Boolean!
+  login(loginCredentials: LoginInput!): Boolean!
   logout: Boolean!
-  register(registerCredentials: RegisterInput!): UserModel!
+  register(registerCredentials: RegisterInput!): Boolean!
 }
 
 type OsModel {
@@ -119,7 +119,8 @@ type Query {
   getAllCurrentUserSessions: [SessionModel!]!
   getCurrentSession: SessionModel!
   getSessionMetadata: SessionMetadataModel!
-  me: UserModel
+  me: UserModel!
+  ping(email: String!): Boolean!
 }
 
 input RegisterInput {
@@ -148,6 +149,8 @@ type SessionUserModel {
   bio: String
   createdAt: DateTime!
   id: String!
+  isEmailVerified: Boolean!
+  isVerified: Boolean!
   nickname: String
   updatedAt: DateTime!
   username: String!
@@ -167,6 +170,8 @@ type UserModel {
   createdAt: DateTime!
   email: String!
   id: String!
+  isEmailVerified: Boolean!
+  isVerified: Boolean!
   nickname: String
   sessionIDs: [String!]!
   updatedAt: DateTime!
