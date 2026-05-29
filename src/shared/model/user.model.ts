@@ -1,5 +1,7 @@
 import { Field, GraphQLISODateTime, ObjectType } from '@nestjs/graphql'
 
+import { Nullable } from '../types/type'
+
 @ObjectType()
 export class SessionUserModel {
 	@Field()
@@ -15,13 +17,19 @@ export class SessionUserModel {
 	username!: string
 
 	@Field(() => String, { nullable: true })
-	nickname!: string | null
+	nickname?: string | Nullable
 
 	@Field(() => String, { nullable: true })
-	bio!: string | null
+	bio?: string | Nullable
 
 	@Field(() => String, { nullable: true })
-	avatar!: string | null
+	avatar?: string | Nullable
+
+	@Field()
+	isVerified!: boolean
+
+	@Field()
+	isEmailVerified!: boolean
 }
 
 @ObjectType()

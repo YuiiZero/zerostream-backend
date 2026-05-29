@@ -5,11 +5,11 @@ import {
 } from '@nestjs/common'
 import { GqlExecutionContext } from '@nestjs/graphql'
 
-import { UserModel } from '../model/user.model'
+import { SessionUserModel } from '../model/user.model'
 import { Ctx } from '../types/type'
 
 export const CurrentUser = createParamDecorator(
-	(data: keyof UserModel, context: ExecutionContext) => {
+	(data: keyof SessionUserModel, context: ExecutionContext) => {
 		const { req }: Ctx = GqlExecutionContext.create(context).getContext()
 		const user = req.session.user
 

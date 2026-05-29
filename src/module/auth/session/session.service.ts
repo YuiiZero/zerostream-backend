@@ -1,7 +1,7 @@
 import {
-	ConflictException,
+	BadRequestException,
 	Injectable,
-	UnauthorizedException
+	NotFoundException
 } from '@nestjs/common'
 import { InternalServerErrorException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
@@ -9,7 +9,6 @@ import { RedisClientType } from '@redis/client'
 import { Request, Response } from 'express'
 import type { Session, SessionData } from 'express-session'
 
-import { User } from '../../../../prisma/generated/prisma/client'
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
 import { RedisService } from '../../../core/module/redis/redis.service'
 import { UserModel } from '../../../shared/model/user.model'
@@ -30,13 +29,16 @@ export class SessionService {
 		this.redisClient = redisService.getClient()
 	}
 
-	async getAllCurrentUserSessions(
-		user: UserModel,
-		session: Session & Partial<SessionData>
-	) {
-		let { sessionIDs } = session
-		if (!sessionIDs) sessionIDs = await this._dbFetchUserSessions(user)
+	async getAllUserSessions(user: UserModel) {
+		const found = await this.prismaService.user.findFirst({
+			where: { id: user.id },
+			select: { sessionIDs: true }
+		})
 
+		if (!found)
+			throw new NotFoundException('Cannot fetch non-existent user sessions')
+
+		const { sessionIDs } = found
 		const prefix = this.configService.getOrThrow<string>('REDIS_PREFIX')
 		const sessions: (Session & Partial<SessionData>)[] = await Promise.all(
 			sessionIDs.map(async sessionID => {
@@ -45,7 +47,7 @@ export class SessionService {
 
 				if (sessionJson === null) {
 					throw new InternalServerErrorException(
-						`Could not fetch user sessions: wrong key ${sessionKey}`
+						`Cannot fetch user sessions due to wrong key ${sessionKey}`
 					)
 				}
 
@@ -57,51 +59,30 @@ export class SessionService {
 		return sessions
 	}
 
-	saveCurrentSession(
-		req: Request,
-		session: Session & Partial<SessionData>,
-		user: UserModel,
-		userAgent: string,
-		ip: string
-	): Promise<Omit<User, 'password'>> {
-		return this._pushCurrentSession(req, session, user, userAgent, ip).then(
-			() =>
-				new Promise((resolve, reject) => {
-					session.save(err => {
-						if (err) {
-							console.error(err)
-							return reject(
-								new InternalServerErrorException('Could not save session', {
-									cause: err
-								})
-							)
-						}
+	async saveCurrentSession(req: Request, user: UserModel) {
+		const userAgent = req.headers['user-agent']
+		const ip = req.ip
 
-						if (!session.user)
-							return reject(
-								new InternalServerErrorException(
-									`session.user is ${session.user}`
-								)
-							)
+		if (!userAgent)
+			throw new InternalServerErrorException('User-Agent is undefined')
+		if (!ip) throw new InternalServerErrorException('IP is undefined')
 
-						resolve(session.user)
-					})
-				})
+		const sessionUser = await this._addSession(user, req.sessionID)
+
+		req.session.user = sessionUser
+		req.session.metadata = await getSessionMetadata(
+			this.configService,
+			userAgent,
+			ip
 		)
 	}
 
-	deleteCurrentSession(
-		req: Request,
-		session: Session & Partial<SessionData>,
-		res: Response,
-		user: UserModel
-	): Promise<boolean> {
-		return this._revokeSession(req.sessionID, user).then(
+	deleteCurrentSession(req: Request, res: Response): Promise<void> {
+		const session = req.session
+
+		return this._deleteSession(req.sessionID).then(
 			() =>
 				new Promise((resolve, reject) => {
-					session.user = null
-					session.metadata = null
-
 					session.destroy((err: unknown) => {
 						if (err)
 							return reject(
@@ -112,101 +93,51 @@ export class SessionService {
 
 						res.clearCookie(this.sessionCookieName)
 
-						resolve(true)
+						resolve()
 					})
 				})
 		)
 	}
 
-	async deleteSessionById(req: Request, user: UserModel, sessionID: string) {
+	async deleteSession(req: Request, sessionID: string) {
 		if (req.sessionID === sessionID)
-			throw new ConflictException(
-				'Unable to delete current session: use logout instead'
+			throw new BadRequestException('Use logout to delete current session')
+		await this._deleteSession(sessionID)
+	}
+
+	private async _addSession(user: UserModel, sessionID: string) {
+		const updated = await this.prismaService.user.update({
+			where: { id: user.id },
+			data: { sessionIDs: [...user.sessionIDs, sessionID] }
+		})
+
+		const { email: _e, password: _p, ...returned } = updated
+		return returned
+	}
+
+	private async _deleteSession(sessionID: string) {
+		const user = await this.prismaService.user.findFirst({
+			where: {
+				sessionIDs: {
+					has: sessionID
+				}
+			}
+		})
+
+		if (!user)
+			throw new NotFoundException(
+				'Cannot revoke non-existent session from database'
 			)
 
+		await this.prismaService.user.update({
+			where: {
+				id: user.id
+			},
+			data: {
+				sessionIDs: user.sessionIDs.filter(id => id !== sessionID)
+			}
+		})
+
 		await this.redisClient.DEL(addSessionPrefix(sessionID, this.configService))
-		this._revokeSession(sessionID, user)
-	}
-
-	private async _pushCurrentSession(
-		req: Request,
-		session: Session & Partial<SessionData>,
-		user: UserModel,
-		userAgent: string,
-		ip: string
-	) {
-		session.user = user
-		session.metadata = await getSessionMetadata(
-			this.configService,
-			userAgent,
-			ip
-		)
-
-		if (!session.user.sessionIDs)
-			session.user.sessionIDs = await this._dbFetchUserSessions(user)
-
-		const sessionIDs = await this._dbAddUserSessions(user, req.sessionID)
-		session.user.sessionIDs = sessionIDs
-	}
-
-	private async _revokeSession(sessionID: string, user: UserModel) {
-		if (!user) {
-			throw new UnauthorizedException('User is unauthorized')
-		}
-
-		if (!user.sessionIDs)
-			user.sessionIDs = await this._dbFetchUserSessions(user)
-
-		const sessionIDs = await this._dbRevokeUserSessionById(user, sessionID)
-
-		user.sessionIDs = sessionIDs
-	}
-
-	// Database related methods
-	private async _dbFetchUserSessions(user: UserModel) {
-		const userID = user.id
-		const foundUser = await this.prismaService.user.findFirst({
-			where: { id: userID },
-			select: { sessionIDs: true }
-		})
-
-		if (!foundUser) {
-			throw new Error('Unable to load session data: user is not found')
-		}
-
-		return foundUser.sessionIDs
-	}
-
-	private async _dbAddUserSessions(user: UserModel, ...sessionIDs: string[]) {
-		const userID = user.id
-		const currentSessions = await this._dbFetchUserSessions(user)
-		const updatedUser = await this.prismaService.user.update({
-			where: { id: userID },
-			data: { sessionIDs: [...currentSessions, ...sessionIDs] },
-			select: { sessionIDs: true }
-		})
-
-		if (!updatedUser) {
-			throw new Error('Unable to update session data: user is not found')
-		}
-
-		return [...currentSessions, ...sessionIDs]
-	}
-
-	private async _dbRevokeUserSessionById(user: UserModel, sessionID: string) {
-		const userID = user.id
-		const currentSessions = await this._dbFetchUserSessions(user)
-		const newSessions = currentSessions.filter((id: string) => id !== sessionID)
-		const updatedUser = await this.prismaService.user.update({
-			where: { id: userID },
-			data: { sessionIDs: newSessions },
-			select: { sessionIDs: true }
-		})
-
-		if (!updatedUser) {
-			throw new Error('Unable to update session data: user is not found')
-		}
-
-		return updatedUser.sessionIDs
 	}
 }

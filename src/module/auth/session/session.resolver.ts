@@ -25,11 +25,8 @@ export class SessionResolver {
 
 	@Authorization()
 	@Query(() => [SessionModel])
-	getAllCurrentUserSessions(
-		@CurrentUser() user: UserModel,
-		@Context() { req }: Ctx
-	) {
-		return this.sessionService.getAllCurrentUserSessions(user, req.session)
+	getAllCurrentUserSessions(@CurrentUser() user: UserModel) {
+		return this.sessionService.getAllUserSessions(user)
 	}
 
 	@Authorization()
@@ -40,12 +37,12 @@ export class SessionResolver {
 
 	@Authorization()
 	@Mutation(() => Boolean)
-	deleteSessionById(
+	async deleteSession(
 		@Context() { req }: Ctx,
 		@CurrentUser() user: UserModel,
 		@Args('sessionID') sessionID: string
 	) {
-		this.sessionService.deleteSessionById(req, user, sessionID)
+		await this.sessionService.deleteSession(req, sessionID)
 		return true
 	}
 }

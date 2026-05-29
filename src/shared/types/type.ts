@@ -74,3 +74,11 @@ export interface SessionMetadata {
 	device: DeviceDetectorResult
 	ip: string
 }
+
+export interface SendMailOptions {
+	to: string
+	subject: string
+	html: string
+}
+
+export type Nullable = null | undefined

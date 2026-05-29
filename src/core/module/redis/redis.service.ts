@@ -11,8 +11,8 @@ export class RedisService {
 	constructor(private configService: ConfigService) {
 		this.client = createClient({
 			socket: {
-				host: configService.getOrThrow<string>('REDIS_HOST'),
-				port: configService.getOrThrow<number>('REDIS_PORT')
+				host: configService.getOrThrow('REDIS_HOST'),
+				port: +configService.getOrThrow('REDIS_PORT')
 			}
 		})
 
