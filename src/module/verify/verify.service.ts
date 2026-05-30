@@ -67,7 +67,7 @@ export class VerifyService {
 			throw new NotFoundException('User not found')
 		}
 
-		const token = await generateToken({
+		const { token } = await generateToken({
 			type: TokenType.EMAIL_VERIFY,
 			configService: this.configService,
 			prismaService: this.prismaService,
