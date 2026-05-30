@@ -4,11 +4,11 @@ import {
 	NotFoundException
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { randomUUID } from 'crypto'
 
 import { TokenType } from '../../../prisma/generated/prisma/enums'
 import { MailService } from '../../core/module/mail/mail.service'
 import { PrismaService } from '../../core/module/prisma/prisma.service'
+import { generateToken } from '../../shared/util/generateToken.util'
 
 @Injectable()
 export class VerifyService {
@@ -19,7 +19,7 @@ export class VerifyService {
 		private readonly mailService: MailService,
 		private readonly configService: ConfigService
 	) {
-		this.tokenTTL = +configService.getOrThrow('EMAIL_VERIFICATION_TOKEN_TTL')
+		this.tokenTTL = +configService.getOrThrow('VERIFICATION_TOKEN_TTL')
 	}
 
 	async verifyEmail(token: string) {
@@ -67,7 +67,13 @@ export class VerifyService {
 			throw new NotFoundException('User not found')
 		}
 
-		const token = await this._generateToken(user.id)
+		const token = await generateToken({
+			type: TokenType.EMAIL_VERIFY,
+			configService: this.configService,
+			prismaService: this.prismaService,
+			isUUID: true,
+			user: user
+		})
 		const verificationUrl = `${this.configService.getOrThrow<string>('APPLICATION_URL')}/auth/verify-email?token=${token}`
 
 		this.mailService.sendEmail({
@@ -77,20 +83,5 @@ export class VerifyService {
 		})
 
 		return true
-	}
-
-	private async _generateToken(userId: string) {
-		const token: string = randomUUID()
-
-		await this.prismaService.token.create({
-			data: {
-				type: TokenType.EMAIL_VERIFY,
-				token,
-				expires: new Date(Date.now() + this.tokenTTL),
-				userId
-			}
-		})
-
-		return token
 	}
 }
