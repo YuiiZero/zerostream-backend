@@ -4,9 +4,11 @@ import {
 	NotFoundException
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { render } from 'react-email'
 
 import { TokenType } from '../../../prisma/generated/prisma/enums'
 import { MailService } from '../../core/module/mail/mail.service'
+import { VerificationTemplate } from '../../core/module/mail/template/verification.template'
 import { PrismaService } from '../../core/module/prisma/prisma.service'
 import { generateToken } from '../../shared/util/generateToken.util'
 
@@ -60,6 +62,24 @@ export class VerifyService {
 		return user
 	}
 
+	async generateEmailVerificationToken(userId: string) {
+		const user = await this.prismaService.user.findFirst({
+			where: { id: userId }
+		})
+
+		if (!user) {
+			throw new NotFoundException('User not found')
+		}
+
+		return await generateToken({
+			type: TokenType.EMAIL_VERIFY,
+			configService: this.configService,
+			prismaService: this.prismaService,
+			isUUID: true,
+			user
+		})
+	}
+
 	async sendEmailVerificationLink(email: string) {
 		const user = await this.prismaService.user.findFirst({ where: { email } })
 
@@ -74,12 +94,13 @@ export class VerifyService {
 			isUUID: true,
 			user: user
 		})
-		const verificationUrl = `${this.configService.getOrThrow<string>('APPLICATION_URL')}/auth/verify-email?token=${token}`
+		const domain = this.configService.getOrThrow('ALLOWED_ORIGIN')
+		const html = await render(VerificationTemplate({ domain, token }))
 
 		this.mailService.sendEmail({
 			to: email,
 			subject: 'Verify your email',
-			html: `<div><a href=${verificationUrl}>Follow this link to verify your email address</a></div>`
+			html
 		})
 
 		return true

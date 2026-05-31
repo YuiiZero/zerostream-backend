@@ -1,27 +1,29 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022"],
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["ES2022"],
 
-    "module": "CommonJS",
+		"module": "CommonJS",
 
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
 
-    "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
+		"strict": true,
+		"noImplicitAny": true,
+		"strictNullChecks": true,
 
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"resolveJsonModule": true,
 
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
-    "types": ["node"],
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"types": ["node"],
 
-    "outDir": "./dist",
-    "rootDir": ".",
-    "sourceMap": true
-  }
+		"outDir": "./dist",
+		"rootDir": ".",
+		"sourceMap": true,
+
+		"jsx": "react"
+	}
 }

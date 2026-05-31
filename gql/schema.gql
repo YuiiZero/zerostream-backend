@@ -104,9 +104,11 @@ input LoginInput {
 
 type Mutation {
   deleteSession(sessionID: String!): Boolean!
+  generateEmailVerificationToken(userId: String!): Boolean!
   login(loginCredentials: LoginInput!): Boolean!
   logout: Boolean!
   register(registerCredentials: RegisterInput!): Boolean!
+  verifyEmail(token: String!): Boolean!
 }
 
 type OsModel {

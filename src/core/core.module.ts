@@ -5,9 +5,9 @@ import { GraphQLModule } from '@nestjs/graphql'
 
 import { AccountResolver } from '../module/auth/account/account.resolver'
 import { AccountService } from '../module/auth/account/account.service'
-import { AuthController } from '../module/auth/auth.controller'
 import { SessionResolver } from '../module/auth/session/session.resolver'
 import { SessionService } from '../module/auth/session/session.service'
+import { VerifyResolver } from '../module/verify/verify.resolver'
 import { VerifyService } from '../module/verify/verify.service'
 import { TimeConverter } from '../shared/util/TimeConverter.util'
 
@@ -41,8 +41,8 @@ import { RedisModule } from './module/redis/redis.module'
 		SessionResolver,
 		SessionService,
 		VerifyService,
+		VerifyResolver,
 		MailResolver
-	],
-	controllers: [AuthController]
+	]
 })
 export class CoreModule {}
