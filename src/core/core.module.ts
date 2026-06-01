@@ -7,6 +7,8 @@ import { AccountResolver } from '../module/auth/account/account.resolver'
 import { AccountService } from '../module/auth/account/account.service'
 import { SessionResolver } from '../module/auth/session/session.resolver'
 import { SessionService } from '../module/auth/session/session.service'
+import { RecoveryResolver } from '../module/recovery/recovery.resolver'
+import { RecoveryService } from '../module/recovery/recovery.service'
 import { VerifyResolver } from '../module/verify/verify.resolver'
 import { VerifyService } from '../module/verify/verify.service'
 import { TimeConverter } from '../shared/util/TimeConverter.util'
@@ -42,7 +44,9 @@ import { RedisModule } from './module/redis/redis.module'
 		SessionService,
 		VerifyService,
 		VerifyResolver,
-		MailResolver
+		MailResolver,
+		RecoveryResolver,
+		RecoveryService
 	]
 })
 export class CoreModule {}

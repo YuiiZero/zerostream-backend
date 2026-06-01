@@ -12,7 +12,7 @@ export class UnauthorizedGuard implements CanActivate {
 		const { req }: Ctx = GqlExecutionContext.create(context).getContext()
 
 		if (req.session.user) {
-			throw new ConflictException('User is already authorized')
+			throw new ConflictException('User is authorized')
 		}
 		return true
 	}

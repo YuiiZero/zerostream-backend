@@ -17,13 +17,18 @@ export class VerifyResolver {
 		const user = await this.verifyService.verifyEmail(token)
 
 		await this.sessionService.saveCurrentSession(req, user)
-
 		return true
 	}
 
 	@Mutation(() => Boolean)
 	async generateEmailVerificationToken(@Args('userId') userId: string) {
 		await this.verifyService.generateEmailVerificationToken(userId)
+		return true
+	}
+
+	@Mutation(() => Boolean)
+	async sendEmailVerificationLink(@Args('email') email: string) {
+		await this.verifyService.sendEmailVerificationLink(email)
 		return true
 	}
 }

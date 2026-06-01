@@ -108,6 +108,10 @@ type Mutation {
   login(loginCredentials: LoginInput!): Boolean!
   logout: Boolean!
   register(registerCredentials: RegisterInput!): Boolean!
+  resetPasswordAuthorized(resetPasswordInput: ResetPasswordInput!): Boolean!
+  resetPasswordUnauthorized(resetPasswordInput: ResetPasswordInput!): Boolean!
+  sendEmailVerificationLink(email: String!): Boolean!
+  sendPasswordRecoveryLink(email: String!): Boolean!
   verifyEmail(token: String!): Boolean!
 }
 
@@ -132,6 +136,13 @@ input RegisterInput {
   nickname: String
   password: String!
   username: String!
+}
+
+input ResetPasswordInput {
+  email: String!
+  newPassword: String!
+  passwordRepeat: String!
+  recoveryToken: String!
 }
 
 type SessionMetadataModel {

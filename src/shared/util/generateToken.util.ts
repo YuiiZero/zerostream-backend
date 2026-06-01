@@ -10,7 +10,7 @@ import { generateCode } from './generateCode.util'
 export async function generateToken({
 	prismaService,
 	configService,
-	isUUID,
+	isUUID = true,
 	type,
 	user
 }: GenerateTokenOptions) {
@@ -35,7 +35,7 @@ export async function generateToken({
 export interface GenerateTokenOptions {
 	prismaService: PrismaService
 	configService: ConfigService
-	isUUID: boolean
+	isUUID?: boolean
 	type: TokenType
 	user: SessionUserModel
 }

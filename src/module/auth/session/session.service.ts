@@ -11,7 +11,7 @@ import type { Session, SessionData } from 'express-session'
 
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
 import { RedisService } from '../../../core/module/redis/redis.service'
-import { UserModel } from '../../../shared/model/user.model'
+import { SessionUserModel, UserModel } from '../../../shared/model/user.model'
 import { addSessionPrefix } from '../../../shared/util/addPrefix.util'
 import { getSessionMetadata } from '../../../shared/util/getSessionMetadata'
 
@@ -103,6 +103,54 @@ export class SessionService {
 		if (req.sessionID === sessionID)
 			throw new BadRequestException('Use logout to delete current session')
 		await this._deleteSession(sessionID)
+	}
+
+	async deleteAllSessions(req: Request, { id }: SessionUserModel) {
+		const found = await this.prismaService.user.findFirst({
+			where: { id },
+			select: { sessionIDs: true }
+		})
+		if (!found)
+			throw new NotFoundException('Cannot delete sessions: wrong user id')
+
+		const { sessionIDs } = found
+
+		if (sessionIDs.length === 0) return
+
+		const sessionKeys = sessionIDs.map((sID: string) =>
+			addSessionPrefix(sID, this.configService)
+		)
+
+		await this.redisClient.DEL(sessionKeys)
+		await this.prismaService.user.update({
+			where: { id },
+			data: { sessionIDs: [] }
+		})
+	}
+
+	async deleteAllSessionsExceptCurrent(req: Request, { id }: SessionUserModel) {
+		const currentSessionID = req.sessionID
+		const found = await this.prismaService.user.findFirst({
+			where: { id },
+			select: { sessionIDs: true }
+		})
+		if (!found)
+			throw new NotFoundException('Cannot delete sessions: wrong user id')
+
+		let { sessionIDs } = found
+		sessionIDs = sessionIDs.filter(sID => sID !== currentSessionID)
+
+		if (sessionIDs.length === 0) return
+
+		const sessionKeys = sessionIDs.map((sID: string) =>
+			addSessionPrefix(sID, this.configService)
+		)
+
+		await this.redisClient.DEL(sessionKeys)
+		await this.prismaService.user.update({
+			where: { id },
+			data: { sessionIDs: [currentSessionID] }
+		})
 	}
 
 	private async _addSession(user: UserModel, sessionID: string) {
