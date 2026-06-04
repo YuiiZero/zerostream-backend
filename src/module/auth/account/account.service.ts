@@ -2,12 +2,15 @@ import {
 	ConflictException,
 	ForbiddenException,
 	Injectable,
+	InternalServerErrorException,
 	UnauthorizedException
 } from '@nestjs/common'
 import { hash, verify } from 'argon2'
+import { TOTP } from 'otpauth'
 
 import { User } from '../../../../prisma/generated/prisma/client'
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
+import { AuthModel } from '../../../shared/model/auth.model'
 import { UserModel } from '../../../shared/model/user.model'
 
 import { LoginInput } from './input/Login.input'
@@ -30,8 +33,8 @@ export class AccountService {
 		return returned
 	}
 
-	async login(userLoginData: LoginInput): Promise<UserModel> {
-		const { password } = userLoginData
+	async login(userLoginData: LoginInput): Promise<AuthModel> {
+		const { password, pincode } = userLoginData
 		let found: User | null = null
 
 		if (userLoginData?.email) {
@@ -54,9 +57,25 @@ export class AccountService {
 		if (!isPasswordVerified)
 			throw new UnauthorizedException('Invalid credentials')
 
-		const { password: _password, ...returned } = found
+		if (found.isTotpEnabled) {
+			if (!pincode)
+				return { message: 'Provide pincode to finish authorization' }
+			if (!found.totpSecret)
+				throw new InternalServerErrorException('TOTP secret is null')
 
-		return returned
+			const totp = new TOTP({
+				issuer: 'YuiiStream',
+				secret: found.totpSecret,
+				algorithm: 'SHA1',
+				label: found.username,
+				digits: 6
+			})
+
+			const delta = totp.validate({ token: pincode })
+			if (delta === null) throw new UnauthorizedException('Wrong pincode')
+		}
+
+		return { user: found }
 	}
 
 	private async checkCredentialsUnique(credentials: {

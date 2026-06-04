@@ -4,6 +4,7 @@ import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql'
 import { Authorization } from '../../../shared/decorator/authorization.decorator'
 import { CurrentUser } from '../../../shared/decorator/current-user.decorator'
 import { Unauthorized } from '../../../shared/decorator/unauthorized.decorator'
+import { AuthModel } from '../../../shared/model/auth.model'
 import { UserModel } from '../../../shared/model/user.model'
 import { LoginPipe } from '../../../shared/pipe/login.pipe'
 import { Ctx } from '../../../shared/types/type'
@@ -40,16 +41,17 @@ export class AccountResolver {
 	}
 
 	@Unauthorized()
-	@Mutation(() => Boolean)
+	@Mutation(() => AuthModel)
 	async login(
 		@Context() { req }: Ctx,
 		@Args('loginCredentials', LoginPipe)
 		loginInput: LoginInput
 	) {
-		const user = await this.accountService.login(loginInput)
-		await this.sessionService.saveCurrentSession(req, user)
+		const result = await this.accountService.login(loginInput)
+		if (result.user)
+			await this.sessionService.saveCurrentSession(req, result.user)
 
-		return true
+		return result
 	}
 
 	@Authorization()

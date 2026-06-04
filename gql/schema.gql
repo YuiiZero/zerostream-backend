@@ -2,6 +2,11 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type AuthModel {
+  message: String
+  user: UserModel
+}
+
 type ClientModel {
   engineVersion: String
   name: String!
@@ -56,6 +61,11 @@ type DeviceModel {
   type: String!
 }
 
+type GenerateTOTPModel {
+  qrCodeUrl: String!
+  secret: String!
+}
+
 type LanguagesModel {
   code: String!
   name: String!
@@ -99,13 +109,16 @@ type LocationModel {
 input LoginInput {
   email: String
   password: String!
+  pincode: String
   username: String
 }
 
 type Mutation {
   deleteSession(sessionID: String!): Boolean!
+  disableTotp(disableTotpInput: TOTPInput!): Boolean!
+  enableTotp(enableTotpInput: TOTPInput!): Boolean!
   generateEmailVerificationToken(userId: String!): Boolean!
-  login(loginCredentials: LoginInput!): Boolean!
+  login(loginCredentials: LoginInput!): AuthModel!
   logout: Boolean!
   register(registerCredentials: RegisterInput!): Boolean!
   resetPasswordAuthorized(resetPasswordInput: ResetPasswordInput!): Boolean!
@@ -122,6 +135,7 @@ type OsModel {
 }
 
 type Query {
+  generateTotpSecret: GenerateTOTPModel!
   getAllCurrentUserSessions: [SessionModel!]!
   getCurrentSession: SessionModel!
   getSessionMetadata: SessionMetadataModel!
@@ -163,10 +177,16 @@ type SessionUserModel {
   createdAt: DateTime!
   id: String!
   isEmailVerified: Boolean!
+  isTotpEnabled: Boolean!
   isVerified: Boolean!
   nickname: String
   updatedAt: DateTime!
   username: String!
+}
+
+input TOTPInput {
+  pincode: String!
+  secret: String!
 }
 
 type TimeZoneModel {
@@ -184,9 +204,11 @@ type UserModel {
   email: String!
   id: String!
   isEmailVerified: Boolean!
+  isTotpEnabled: Boolean!
   isVerified: Boolean!
   nickname: String
   sessionIDs: [String!]!
+  totpSecret: String
   updatedAt: DateTime!
   username: String!
 }

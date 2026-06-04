@@ -30,6 +30,9 @@ export class SessionUserModel {
 
 	@Field()
 	isEmailVerified!: boolean
+
+	@Field()
+	isTotpEnabled!: boolean
 }
 
 @ObjectType()
@@ -39,4 +42,7 @@ export class UserModel extends SessionUserModel {
 
 	@Field(() => [String])
 	sessionIDs!: string[]
+
+	@Field(() => String, { nullable: true })
+	totpSecret?: string | Nullable
 }
