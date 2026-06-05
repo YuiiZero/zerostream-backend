@@ -1,6 +1,7 @@
 import {
 	BadRequestException,
 	Injectable,
+	InternalServerErrorException,
 	NotFoundException
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
@@ -36,6 +37,12 @@ export class VerifyService {
 			throw new NotFoundException('Could not verify email: bad token')
 		}
 
+		await this.prismaService.token.delete({
+			where: {
+				token
+			}
+		})
+
 		const isTokenExpired = Date.now() > foundToken.expires.getTime()
 
 		if (isTokenExpired) {
@@ -43,8 +50,21 @@ export class VerifyService {
 		}
 
 		const { userId: id } = foundToken
+		const foundUser = await this.prismaService.user.findFirst({ where: { id } })
 
-		const user = await this.prismaService.user.update({
+		if (!foundUser) {
+			throw new InternalServerErrorException(
+				'Could not verify email: token is related to non-existent user'
+			)
+		}
+
+		if (foundUser.isEmailVerified) {
+			throw new BadRequestException(
+				'Could not verify email: email is already verified'
+			)
+		}
+
+		const updatedUser = await this.prismaService.user.update({
 			where: {
 				id
 			},
@@ -53,13 +73,7 @@ export class VerifyService {
 			}
 		})
 
-		await this.prismaService.token.delete({
-			where: {
-				token
-			}
-		})
-
-		return user
+		return updatedUser
 	}
 
 	async generateEmailVerificationToken(userId: string) {

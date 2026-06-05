@@ -71,7 +71,7 @@ export class RecoveryService {
 		})
 
 		if (!foundToken)
-			throw new NotFoundException('Cannot reset password: wrong token')
+			throw new NotFoundException('Cannot reset password: bad token')
 
 		const isTokenExpired = Date.now() > foundToken.expires.getTime()
 

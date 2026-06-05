@@ -186,7 +186,6 @@ type SessionUserModel {
 
 input TOTPInput {
   pincode: String!
-  secret: String!
 }
 
 type TimeZoneModel {

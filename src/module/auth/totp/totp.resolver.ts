@@ -1,10 +1,11 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql'
+import { Args, Context, Mutation, Resolver } from '@nestjs/graphql'
 import { Query } from '@nestjs/graphql'
 
 import { Authorization } from '../../../shared/decorator/authorization.decorator'
 import { CurrentUser } from '../../../shared/decorator/current-user.decorator'
 import { GenerateTOTPModel } from '../../../shared/model/generate-totp.model'
 import { UserModel } from '../../../shared/model/user.model'
+import { Ctx } from '../../../shared/types/type'
 
 import { TOTPInput } from './input/totp.input'
 import { TotpService } from './totp.service'
@@ -23,9 +24,13 @@ export class TotpResolver {
 	@Mutation(() => Boolean, { name: 'enableTotp' })
 	async enableTOTP(
 		@CurrentUser() user: UserModel,
-		@Args('enableTotpInput') input: TOTPInput
+		@Args('enableTotpInput') input: TOTPInput,
+		@Context() { req }: Ctx
 	) {
 		await this.totpService.enableTOTP(user, input)
+
+		req.session.user!.isTotpEnabled = true
+
 		return true
 	}
 
@@ -33,9 +38,13 @@ export class TotpResolver {
 	@Mutation(() => Boolean, { name: 'disableTotp' })
 	async disableTOTP(
 		@CurrentUser() user: UserModel,
-		@Args('disableTotpInput') input: TOTPInput
+		@Args('disableTotpInput') input: TOTPInput,
+		@Context() { req }: Ctx
 	) {
 		await this.totpService.disableTOTP(user, input)
+
+		req.session.user!.isTotpEnabled = false
+
 		return true
 	}
 }
