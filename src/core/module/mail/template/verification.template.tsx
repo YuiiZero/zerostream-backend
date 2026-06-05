@@ -1,33 +1,57 @@
 import * as React from 'react'
-import { Body, Head, Heading, Html, Link, Preview, Section, Tailwind, Text } from 'react-email'
+import {
+	Heading,
+	Link,
+	Section,
+	Text
+} from 'react-email'
+
+import { EmailLayout } from './email-layout'
 
 interface VerificationTemplateProps {
-  domain: string,
-  token: string
+	domain: string
+	token: string
 }
 
-export function VerificationTemplate({ domain, token }: VerificationTemplateProps) {
-  const verificationLink = `${domain}/account/verify?token=${token}`
+export function VerificationTemplate({
+	domain,
+	token
+}: VerificationTemplateProps) {
+	const verificationLink =
+		`${domain}/account/verify?token=${token}`
 
-  return <Html>
-    <Tailwind>
-      <Head />
-      <Preview>Verify your account</Preview>
-      <Body className='max-w-2xl mx-auto p-6 bg-slate-50'>
-        <Section className='text-center mb-8'>
-          <Heading className='text-3xl font-bold'>Verify your email on {domain}</Heading>
-          <Text className='text-base text-black'>
-            Welcome to Yuii's streaming platform!{<br></br>}
-            Please, verify your email address by pressing the button below:
-          </Text>
-          <Link href={verificationLink} className="font-semibold mx-auto px-5 py-1 bg-transparent text-violet-800 border-2 rounded-full hover:bg-violet-800 hover:border-transparent hover:text-white active:bg-violet-900">
-            Verify
-          </Link>
-        </Section>
-        <Section className="text-center text-gray-600">
-          If you have any questions, please contact us: <Link href="mailto:support@yuiistream.ru" className="underline">support@yuiistream.ru</Link>
-        </Section>
-      </Body>
-    </Tailwind>
-  </Html>
+	return (
+		<EmailLayout preview="Verify your email address">
+			<Heading className="text-[36px] font-bold text-slate-900 mb-6">
+				Verify your email address
+			</Heading>
+
+			<Text className="text-[18px] leading-8 text-slate-700">
+				Thanks for creating your Yuii Stream account.
+				To activate your account and start using the platform,
+				please verify your email address by clicking the button below.
+			</Text>
+
+			<Section className="text-center my-10">
+				<Link
+					href={verificationLink}
+					className="inline-block bg-violet-600 text-white no-underline px-8 py-4 rounded font-semibold"
+				>
+					Verify Email
+				</Link>
+			</Section>
+
+			<Text className="text-slate-500 text-sm">
+				If the button does not work, copy and paste
+				the following link into your browser:
+			</Text>
+
+			<Link
+				href={verificationLink}
+				className="text-violet-600 break-all"
+			>
+				{verificationLink}
+			</Link>
+		</EmailLayout>
+	)
 }

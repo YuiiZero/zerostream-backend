@@ -1,50 +1,106 @@
-import { SessionMetadata } from "../../../../shared/types/type";
 import * as React from 'react'
-import {Html, Tailwind, Head, Preview, Body, Section, Heading, Text, Link} from 'react-email'
+import {
+	Heading,
+	Link,
+	Section,
+	Text
+} from 'react-email'
+
+import { EmailLayout } from './email-layout'
+import { SessionMetadata } from '../../../../shared/types/type'
 
 interface PasswordRecoveryTemplateProps {
-  domain: string,
-  token: string,
-  metadata: SessionMetadata
+	domain: string
+	token: string
+	metadata: SessionMetadata
 }
 
-export function PasswordRecoveryTemplate({ domain, token, metadata }: PasswordRecoveryTemplateProps) {
-  const recoveryLink = `${domain}/account/reset-password?token=${token}`
-  const client = metadata.device.client?.name
-  const location = `${metadata.locationDetails.country_name}: ${metadata.locationDetails.city}`
-  const ip = metadata.ip
-  const os = metadata.device.os?.name
+export function PasswordRecoveryTemplate({
+	domain,
+	token,
+	metadata
+}: PasswordRecoveryTemplateProps) {
+	const recoveryLink =
+		`${domain}/account/reset-password?token=${token}`
 
-  return <Html>
-    <Tailwind>
-      <Head />
-      <Preview>Password reset request</Preview>
-      <Body className='max-w-2xl mx-auto p-6 bg-slate-50'>
-        <Section className='text-center mb-8'>
-          <Heading className='text-3xl font-bold'>Password reset request on {domain}</Heading>
-          <Text className='text-base text-black'>
-            Hello! Press the button below to reset your password on Yuii Stream.
-          </Text>
-          <Text className='text-base font-semibold text-red-600'>
-            Warning: if you have not requested password recovery, ignore this message. Do not share this link with anyone.
-          </Text>
-          <Text>
-            Information about the request:
-            <ul className="text-left">
-              {ip && <li><span className="font-semibold text-violet-800">IP</span> {ip}</li>}
-              {location && <li><span className="font-semibold text-violet-800">Location</span> {location}</li>}
-              {client && <li><span className="font-semibold text-violet-800">Client</span> {client}</li>}
-              {os && <li><span className="font-semibold text-violet-800">OS</span> {os}</li>}
-            </ul>
-          </Text>
-          <Link href={recoveryLink} className="font-semibold mx-auto px-5 py-1 bg-transparent text-violet-800 border-2 rounded-full hover:bg-violet-800 hover:border-transparent hover:text-white active:bg-violet-900">
-            Reset password
-          </Link>
-        </Section>
-        <Section className="text-center text-gray-600">
-          If you have any questions, please contact us: <Link href="mailto:support@yuiistream.ru" className="underline">support@yuiistream.ru</Link>
-        </Section>
-      </Body>
-    </Tailwind>
-  </Html>
+	const client = metadata.device.client?.name
+	const os = metadata.device.os?.name
+	const ip = metadata.ip
+
+	const location =
+		metadata.locationDetails?.country_name &&
+		metadata.locationDetails?.city
+			? `${metadata.locationDetails.country_name}, ${metadata.locationDetails.city}`
+			: undefined
+
+	return (
+		<EmailLayout preview="Password reset request">
+			<Heading className="text-[36px] font-bold text-slate-900 mb-6">
+				Reset your password
+			</Heading>
+
+			<Text className="text-[18px] leading-8 text-slate-700">
+				We received a request to reset the password
+				for your Yuii Stream account.
+				Click the button below to create a new password.
+			</Text>
+
+			<Section className="text-center my-10">
+				<Link
+					href={recoveryLink}
+					className="inline-block bg-violet-600 text-white no-underline px-8 py-4 rounded font-semibold"
+				>
+					Reset Password
+				</Link>
+			</Section>
+
+			<Section className="bg-slate-50 rounded p-5 mb-8">
+				<Text className="font-semibold text-slate-900 mb-3">
+					Request details
+				</Text>
+
+				{ip && (
+					<Text className="m-0">
+						<strong>IP address:</strong> {ip}
+					</Text>
+				)}
+
+				{location && (
+					<Text className="m-0">
+						<strong>Location:</strong> {location}
+					</Text>
+				)}
+
+				{client && (
+					<Text className="m-0">
+						<strong>Browser:</strong> {client}
+					</Text>
+				)}
+
+				{os && (
+					<Text className="m-0">
+						<strong>Operating system:</strong> {os}
+					</Text>
+				)}
+			</Section>
+
+			<Text className="text-red-600 font-semibold">
+				If you did not request a password reset,
+				you can safely ignore this email.
+				Your password will remain unchanged.
+			</Text>
+
+			<Text className="text-slate-500 text-sm mt-8">
+				If the button does not work, copy and paste
+				the following link into your browser:
+			</Text>
+
+			<Link
+				href={recoveryLink}
+				className="text-violet-600 break-all"
+			>
+				{recoveryLink}
+			</Link>
+		</EmailLayout>
+	)
 }
