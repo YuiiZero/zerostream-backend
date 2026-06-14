@@ -1,21 +1,10 @@
 import { Field, InputType } from '@nestjs/graphql'
-import {
-	IsEmail,
-	IsNotEmpty,
-	IsString,
-	MinLength,
-	Validate
-} from 'class-validator'
+import { IsNotEmpty, IsString, MinLength, Validate } from 'class-validator'
 
 import { MatchPasswordsConstraint } from '../../../shared/validation-constraint/matchPasswords.constraint'
 
 @InputType()
 export class ResetPasswordInput {
-	@Field()
-	@IsEmail()
-	@IsNotEmpty()
-	email!: string
-
 	@Field()
 	@IsString()
 	@MinLength(6)

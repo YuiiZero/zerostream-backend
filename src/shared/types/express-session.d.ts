@@ -1,11 +1,14 @@
 import 'express-session'
 import { TOTP } from 'otpauth'
 
-import { SessionUserModel } from '../model/user.model'
+import { SessionMetadata } from './metadata.type'
+import { SessionUser } from './user.type'
 
 declare module 'express-session' {
 	interface SessionData {
-		user: SessionUserModel
+		sessID: string
+
+		user: SessionUser
 		metadata: SessionMetadata
 		totp?: TOTP
 	}

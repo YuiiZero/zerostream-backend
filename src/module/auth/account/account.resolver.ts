@@ -1,14 +1,16 @@
 import { ConfigService } from '@nestjs/config'
 import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql'
 
+import { MailService } from '../../../core/module/mail/mail.service'
 import { Authorization } from '../../../shared/decorator/authorization.decorator'
-import { CurrentUser } from '../../../shared/decorator/current-user.decorator'
+import { CurrentUserId } from '../../../shared/decorator/current-user-id.decorator'
 import { Unauthorized } from '../../../shared/decorator/unauthorized.decorator'
-import { AuthModel } from '../../../shared/model/auth.model'
-import { UserModel } from '../../../shared/model/user.model'
+import { MessageModel } from '../../../shared/model/message.model'
+import { PrivateUserModel } from '../../../shared/model/user.model'
 import { LoginPipe } from '../../../shared/pipe/login.pipe'
 import { Ctx } from '../../../shared/types/type'
-import { VerifyService } from '../../verify/verify.service'
+import { TokenService } from '../../service/token/token.service'
+import { UserService } from '../../service/user/user.service'
 import { SessionService } from '../session/session.service'
 
 import { AccountService } from './account.service'
@@ -23,41 +25,52 @@ export class AccountResolver {
 		private readonly accountService: AccountService,
 		private readonly configService: ConfigService,
 		private readonly sessionService: SessionService,
-		private readonly verifyService: VerifyService
+		private readonly mailService: MailService,
+		private readonly tokenService: TokenService,
+		private readonly userService: UserService
 	) {
 		this.sessionCookieName = configService.getOrThrow<string>('SESSION_NAME')
 	}
 
 	@Unauthorized()
-	@Mutation(() => Boolean)
+	@Mutation(() => MessageModel)
 	async register(
 		@Args('registerCredentials')
 		registerInput: RegisterInput
-	) {
+	): Promise<MessageModel> {
 		const user = await this.accountService.register(registerInput)
-		await this.verifyService.sendEmailVerificationLink(user.email)
+		const sessionUser = await this.userService.toSessionUser(user)
+		const { token } =
+			await this.tokenService.generateEmailVerificationToken(sessionUser)
+		const domain = this.configService.getOrThrow('ALLOWED_ORIGIN')
 
-		return true
+		await this.mailService.sendEmailVerificationEmail({
+			domain,
+			to: registerInput.email,
+			token
+		})
+
+		return { message: 'Verify your email to finish registration' }
 	}
 
 	@Unauthorized()
-	@Mutation(() => AuthModel)
+	@Mutation(() => Boolean)
 	async login(
 		@Context() { req }: Ctx,
 		@Args('loginCredentials', LoginPipe)
 		loginInput: LoginInput
-	) {
-		const result = await this.accountService.login(loginInput)
-		if (result.user)
-			await this.sessionService.saveCurrentSession(req, result.user)
+	): Promise<boolean> {
+		const publicUser = await this.accountService.login(loginInput)
+		await this.sessionService.saveCurrentSession(req, publicUser)
 
-		return result
+		return true
 	}
 
 	@Authorization()
 	@Mutation(() => Boolean)
-	async logout(@Context() { req, res }: Ctx) {
+	async logout(@Context() { req, res }: Ctx): Promise<boolean> {
 		await this.sessionService.deleteCurrentSession(req, res)
+
 		return true
 	}
 
@@ -66,14 +79,15 @@ export class AccountResolver {
 	async deleteSession(
 		@Context() { req }: Ctx,
 		@Args('sessionID') sessionID: string
-	) {
+	): Promise<boolean> {
 		await this.sessionService.deleteSession(req, sessionID)
+
 		return true
 	}
 
 	@Authorization()
-	@Query(() => UserModel)
-	async me(@CurrentUser() user: UserModel) {
-		return user
+	@Query(() => PrivateUserModel)
+	async me(@CurrentUserId() id: string) {
+		return this.accountService.me(id)
 	}
 }

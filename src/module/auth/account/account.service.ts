@@ -10,8 +10,7 @@ import { TOTP } from 'otpauth'
 
 import { User } from '../../../../prisma/generated/prisma/client'
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
-import { AuthModel } from '../../../shared/model/auth.model'
-import { UserModel } from '../../../shared/model/user.model'
+import { PublicUserModel } from '../../../shared/model/user.model'
 
 import { LoginInput } from './input/Login.input'
 import { RegisterInput } from './input/Register.input'
@@ -20,72 +19,72 @@ import { RegisterInput } from './input/Register.input'
 export class AccountService {
 	constructor(private prismaService: PrismaService) {}
 
-	async register(userRegisterData: RegisterInput): Promise<UserModel> {
-		const { password } = userRegisterData
-		await this.checkCredentialsUnique(userRegisterData)
+	async me(id: string) {
+		return this.prismaService.user.findUnique({ where: { id } })
+	}
 
-		const created = await this.prismaService.user.create({
+	async register(userRegisterData: RegisterInput): Promise<PublicUserModel> {
+		const { password } = userRegisterData
+
+		await this._checkCredentialsUnique(userRegisterData)
+
+		const user = await this.prismaService.user.create({
 			data: { ...userRegisterData, password: await hash(password) }
 		})
-
-		const { password: _password, ...returned } = created
+		const { password: _, ...returned } = user
 
 		return returned
 	}
 
-	async login(userLoginData: LoginInput): Promise<AuthModel> {
-		const { password, pincode } = userLoginData
-		let found: User | null = null
-
-		if (userLoginData?.email) {
-			found = await this.prismaService.user.findFirst({
-				where: { email: userLoginData.email }
-			})
-		} else if (userLoginData?.username) {
-			found = await this.prismaService.user.findFirst({
-				where: { username: userLoginData.username }
-			})
-		}
+	async login(userLoginData: LoginInput): Promise<PublicUserModel> {
+		const { password, pincode, email, username } = userLoginData
+		const found: User | null = email
+			? await this.prismaService.user.findUnique({ where: { email } })
+			: await this.prismaService.user.findUnique({ where: { username } })
 
 		if (!found) throw new UnauthorizedException('Invalid credentials')
-
-		if (!found.isEmailVerified)
-			throw new ForbiddenException('Email is not verified')
 
 		const isPasswordVerified = await verify(found.password, password)
 
 		if (!isPasswordVerified)
 			throw new UnauthorizedException('Invalid credentials')
 
+		if (!found.isEmailVerified)
+			throw new ForbiddenException('Email is not verified')
+
 		if (found.isTotpEnabled) {
 			if (!pincode)
-				return { message: 'Provide pincode to finish authorization' }
+				throw new UnauthorizedException(
+					'Provide pincode to finish authorization'
+				)
 			if (!found.totpSecret)
 				throw new InternalServerErrorException('TOTP secret is null')
 
-			const totp = new TOTP({
-				issuer: 'YuiiStream',
-				secret: found.totpSecret,
-				algorithm: 'SHA1',
-				label: found.username,
-				digits: 6
-			})
-
+			const totp = new TOTP({ secret: found.totpSecret })
 			const delta = totp.validate({ token: pincode })
+
 			if (delta === null) throw new UnauthorizedException('Wrong pincode')
 		}
 
-		return { user: found }
+		const { password: _, ...returned } = found
+
+		return returned
 	}
 
-	private async checkCredentialsUnique(credentials: {
+	private async _checkCredentialsUnique(credentials: {
 		email: User['email']
 		username: User['username']
 	}) {
 		const { email, username } = credentials
-		if (await this.prismaService.user.findFirst({ where: { email } }))
+		const found = await this.prismaService.user.findFirst({
+			where: { OR: [{ email }, { username }] }
+		})
+
+		if (!found) return
+
+		if (found.email === email)
 			throw new ConflictException('This email is taken')
-		if (await this.prismaService.user.findFirst({ where: { username } }))
+		if (found.username === username)
 			throw new ConflictException('This username is taken')
 	}
 }

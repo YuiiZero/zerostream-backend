@@ -1,11 +1,8 @@
-import { Args, Context, Mutation, Resolver } from '@nestjs/graphql'
-import { Query } from '@nestjs/graphql'
+import { Args, Mutation, Resolver } from '@nestjs/graphql'
 
 import { Authorization } from '../../../shared/decorator/authorization.decorator'
-import { CurrentUser } from '../../../shared/decorator/current-user.decorator'
+import { CurrentUserId } from '../../../shared/decorator/current-user-id.decorator'
 import { GenerateTOTPModel } from '../../../shared/model/generate-totp.model'
-import { UserModel } from '../../../shared/model/user.model'
-import { Ctx } from '../../../shared/types/type'
 
 import { TOTPInput } from './input/totp.input'
 import { TotpService } from './totp.service'
@@ -15,36 +12,31 @@ export class TotpResolver {
 	constructor(private readonly totpService: TotpService) {}
 
 	@Authorization()
-	@Query(() => GenerateTOTPModel)
-	generateTotpSecret(@CurrentUser() user: UserModel) {
-		return this.totpService.generate(user)
+	@Mutation(() => GenerateTOTPModel)
+	public async generateTOTPSecret(
+		@CurrentUserId() userId: string
+	): Promise<GenerateTOTPModel> {
+		return await this.totpService.generate(userId)
 	}
 
 	@Authorization()
-	@Mutation(() => Boolean, { name: 'enableTotp' })
-	async enableTOTP(
-		@CurrentUser() user: UserModel,
-		@Args('enableTotpInput') input: TOTPInput,
-		@Context() { req }: Ctx
+	@Mutation(() => Boolean)
+	public async enableTOTP(
+		@CurrentUserId() userId: string,
+		@Args('enableTotpInput') input: TOTPInput
 	) {
-		await this.totpService.enableTOTP(user, input)
-
-		req.session.user!.isTotpEnabled = true
+		await this.totpService.enableTOTP(userId, input)
 
 		return true
 	}
 
 	@Authorization()
-	@Mutation(() => Boolean, { name: 'disableTotp' })
-	async disableTOTP(
-		@CurrentUser() user: UserModel,
-		@Args('disableTotpInput') input: TOTPInput,
-		@Context() { req }: Ctx
+	@Mutation(() => Boolean)
+	public async disableTOTP(
+		@CurrentUserId() userId: string,
+		@Args('disableTotpInput') input: TOTPInput
 	) {
-		await this.totpService.disableTOTP(user, input)
-
-		req.session.user!.isTotpEnabled = false
-
+		await this.totpService.disableTOTP(userId, input)
 		return true
 	}
 }

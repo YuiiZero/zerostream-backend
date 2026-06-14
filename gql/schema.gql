@@ -2,11 +2,6 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type AuthModel {
-  message: String
-  user: UserModel
-}
-
 type ClientModel {
   engineVersion: String
   name: String!
@@ -28,12 +23,12 @@ type ConnectionModel {
 }
 
 type CookieModel {
-  expires: String!
-  httpOnly: Boolean!
-  originalMaxAge: Int!
-  path: String!
-  sameSite: String!
-  secure: Boolean!
+  expires: DateTime
+  httpOnly: Boolean
+  originalMaxAge: Int
+  path: String
+  sameSite: String
+  secure: Boolean
 }
 
 type CurrencyModel {
@@ -48,6 +43,10 @@ type CurrencyModel {
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
 scalar DateTime
+
+input DeactivateAccountInput {
+  token: String!
+}
 
 type DeviceMetadataModel {
   client: ClientModel
@@ -82,7 +81,6 @@ type LocationDetailsModel {
   country_name: String!
   currency: CurrencyModel!
   dma: String
-  ip: String!
   ip_routing_type: String
   latitude: Float
   location: LocationModel!
@@ -113,19 +111,26 @@ input LoginInput {
   username: String
 }
 
+type MessageModel {
+  message: String!
+}
+
 type Mutation {
+  deactivateAccount(deactivateAccountInput: DeactivateAccountInput!): PublicUserModel!
   deleteSession(sessionID: String!): Boolean!
-  disableTotp(disableTotpInput: TOTPInput!): Boolean!
-  enableTotp(enableTotpInput: TOTPInput!): Boolean!
-  generateEmailVerificationToken(userId: String!): Boolean!
-  login(loginCredentials: LoginInput!): AuthModel!
+  disableTOTP(disableTotpInput: TOTPInput!): Boolean!
+  enableTOTP(enableTotpInput: TOTPInput!): Boolean!
+  generateTOTPSecret: GenerateTOTPModel!
+  login(loginCredentials: LoginInput!): Boolean!
   logout: Boolean!
-  register(registerCredentials: RegisterInput!): Boolean!
-  resetPasswordAuthorized(resetPasswordInput: ResetPasswordInput!): Boolean!
-  resetPasswordUnauthorized(resetPasswordInput: ResetPasswordInput!): Boolean!
-  sendEmailVerificationLink(email: String!): Boolean!
-  sendPasswordRecoveryLink(email: String!): Boolean!
-  verifyEmail(token: String!): Boolean!
+  register(registerCredentials: RegisterInput!): MessageModel!
+  resetPasswordAuthorized(resetPasswordInput: ResetPasswordInput!): PublicUserModel!
+  resetPasswordUnauthorized(resetPasswordInput: ResetPasswordInput!): PublicUserModel!
+  revokeSession(sessionID: String!): Boolean!
+  sendAccountDeactivationEmail: Boolean!
+  sendEmailVerifiationEmail(to: String!): Boolean!
+  sendPasswordRecoveryEmail(to: String!): Boolean!
+  verifyEmail(verifyEmailInput: VerifyEmailInput!): Boolean!
 }
 
 type OsModel {
@@ -134,13 +139,32 @@ type OsModel {
   version: String!
 }
 
+type PrivateUserModel {
+  avatar: String
+  bio: String
+  createdAt: DateTime!
+  email: String!
+  id: String!
+  isEmailVerified: Boolean!
+  isTotpEnabled: Boolean!
+  isVerified: Boolean!
+  nickname: String
+  username: String!
+}
+
+type PublicUserModel {
+  avatar: String
+  bio: String
+  isVerified: Boolean!
+  nickname: String
+  username: String!
+}
+
 type Query {
-  generateTotpSecret: GenerateTOTPModel!
   getAllCurrentUserSessions: [SessionModel!]!
   getCurrentSession: SessionModel!
   getSessionMetadata: SessionMetadataModel!
-  me: UserModel!
-  ping(email: String!): Boolean!
+  me: PrivateUserModel!
 }
 
 input RegisterInput {
@@ -153,7 +177,6 @@ input RegisterInput {
 }
 
 input ResetPasswordInput {
-  email: String!
   newPassword: String!
   passwordRepeat: String!
   recoveryToken: String!
@@ -168,20 +191,12 @@ type SessionMetadataModel {
 type SessionModel {
   cookie: CookieModel!
   metadata: SessionMetadataModel!
+  sessID: String!
   user: SessionUserModel!
 }
 
 type SessionUserModel {
-  avatar: String
-  bio: String
-  createdAt: DateTime!
   id: String!
-  isEmailVerified: Boolean!
-  isTotpEnabled: Boolean!
-  isVerified: Boolean!
-  nickname: String
-  updatedAt: DateTime!
-  username: String!
 }
 
 input TOTPInput {
@@ -196,18 +211,6 @@ type TimeZoneModel {
   is_daylight_saving: Boolean!
 }
 
-type UserModel {
-  avatar: String
-  bio: String
-  createdAt: DateTime!
-  email: String!
-  id: String!
-  isEmailVerified: Boolean!
-  isTotpEnabled: Boolean!
-  isVerified: Boolean!
-  nickname: String
-  sessionIDs: [String!]!
-  totpSecret: String
-  updatedAt: DateTime!
-  username: String!
+input VerifyEmailInput {
+  token: String!
 }

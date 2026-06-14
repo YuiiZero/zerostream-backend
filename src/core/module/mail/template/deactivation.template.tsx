@@ -1,27 +1,31 @@
 import * as React from 'react'
 import {
 	Heading,
-	Link,
 	Section,
 	Text
 } from 'react-email'
 
+import { StringValue } from 'ms'
+
 import { EmailLayout } from './email-layout'
 import { SessionMetadata } from '../../../../shared/types/metadata.type'
+import { TimeConverter } from '../../../../shared/util/TimeConverter.util'
 
-interface PasswordRecoveryTemplateProps {
-	domain: string
+interface DeactivationTemplateProps {
 	token: string
 	metadata: SessionMetadata
+	pincodeTTL: StringValue
 }
 
-export function PasswordRecoveryTemplate({
-	domain,
+export function DeactivationTemplate({
 	token,
-	metadata
-}: PasswordRecoveryTemplateProps) {
-	const recoveryLink =
-		`${domain}/account/reset-password?token=${token}`
+	metadata,
+	pincodeTTL
+}: DeactivationTemplateProps) {
+	const timeConverter = new TimeConverter()
+
+	const ttlMinutes =
+		timeConverter.getMinutes(pincodeTTL)
 
 	const client = metadata.device.client?.name
 	const os = metadata.device.os?.name
@@ -34,24 +38,27 @@ export function PasswordRecoveryTemplate({
 			: undefined
 
 	return (
-		<EmailLayout preview="Password reset request">
+		<EmailLayout preview="Account deactivation request">
 			<Heading className="text-[36px] font-bold text-slate-900 mb-6">
-				Reset your password
+				Account deactivation request
 			</Heading>
 
 			<Text className="text-[18px] leading-8 text-slate-700">
-				We received a request to reset the password
-				for your Yuii Stream account.
-				Click the button below to create a new password.
+				You requested to deactivate your
+				Yuii Stream account.
+				Enter the verification code below
+				to continue.
+			</Text>
+
+			<Text className="text-slate-700">
+				This code expires in{' '}
+				<strong>{ttlMinutes} minutes</strong>.
 			</Text>
 
 			<Section className="text-center my-10">
-				<Link
-					href={recoveryLink}
-					className="inline-block bg-violet-600 text-white no-underline px-8 py-4 rounded font-semibold"
-				>
-					Reset Password
-				</Link>
+				<Text className="inline-block bg-violet-600 text-white text-4xl font-bold tracking-[10px] px-8 py-4 rounded m-0">
+					{token}
+				</Text>
 			</Section>
 
 			<Section className="bg-slate-50 rounded p-5 mb-8">
@@ -85,22 +92,10 @@ export function PasswordRecoveryTemplate({
 			</Section>
 
 			<Text className="text-red-600 font-semibold">
-				If you did not request a password reset,
-				you can safely ignore this email.
-				Your password will remain unchanged.
+				If you did not request this action,
+				do not share this code with anyone
+				and ignore this email.
 			</Text>
-
-			<Text className="text-slate-500 text-sm mt-8">
-				If the button does not work, copy and paste
-				the following link into your browser:
-			</Text>
-
-			<Link
-				href={recoveryLink}
-				className="text-violet-600 break-all"
-			>
-				{recoveryLink}
-			</Link>
 		</EmailLayout>
 	)
 }

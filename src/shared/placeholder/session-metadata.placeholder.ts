@@ -1,7 +1,6 @@
-import { LocationLookupResult } from '../types/type'
+import { LocationLookupResult } from '../types/metadata.type'
 
 export const locationDetailsPlaceholder: LocationLookupResult = {
-	ip: '89.127.194.227',
 	type: 'ipv4',
 	continent_code: 'EU',
 	continent_name: 'Europe',

@@ -3,16 +3,7 @@ import { Field, GraphQLISODateTime, ObjectType } from '@nestjs/graphql'
 import { Nullable } from '../types/type'
 
 @ObjectType()
-export class SessionUserModel {
-	@Field()
-	id!: string
-
-	@Field(() => GraphQLISODateTime)
-	createdAt!: Date
-
-	@Field(() => GraphQLISODateTime)
-	updatedAt!: Date
-
+export class PublicUserModel {
 	@Field()
 	username!: string
 
@@ -27,22 +18,28 @@ export class SessionUserModel {
 
 	@Field()
 	isVerified!: boolean
+}
+
+@ObjectType()
+export class PrivateUserModel extends PublicUserModel {
+	@Field()
+	id!: string
+
+	@Field(() => GraphQLISODateTime)
+	createdAt!: Date
 
 	@Field()
 	isEmailVerified!: boolean
 
 	@Field()
 	isTotpEnabled!: boolean
+
+	@Field()
+	email!: string
 }
 
 @ObjectType()
-export class UserModel extends SessionUserModel {
+export class SessionUserModel {
 	@Field()
-	email!: string
-
-	@Field(() => [String])
-	sessionIDs!: string[]
-
-	@Field(() => String, { nullable: true })
-	totpSecret?: string | Nullable
+	id!: string
 }

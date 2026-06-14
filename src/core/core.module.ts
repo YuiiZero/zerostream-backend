@@ -9,8 +9,14 @@ import { SessionResolver } from '../module/auth/session/session.resolver'
 import { SessionService } from '../module/auth/session/session.service'
 import { TotpResolver } from '../module/auth/totp/totp.resolver'
 import { TotpService } from '../module/auth/totp/totp.service'
+import { DeactivateResolver } from '../module/deactivate/deactivate.resolver'
+import { DeactivateService } from '../module/deactivate/deactivate.service'
 import { RecoveryResolver } from '../module/recovery/recovery.resolver'
 import { RecoveryService } from '../module/recovery/recovery.service'
+import { TokenModule } from '../module/service/token/token.module'
+import { TokenService } from '../module/service/token/token.service'
+import { UserModule } from '../module/service/user/user.module'
+import { UserService } from '../module/service/user/user.service'
 import { VerifyResolver } from '../module/verify/verify.resolver'
 import { VerifyService } from '../module/verify/verify.service'
 import { TimeConverter } from '../shared/util/TimeConverter.util'
@@ -36,7 +42,9 @@ import { RedisModule } from './module/redis/redis.module'
 			useFactory: getGraphqlConf,
 			inject: [ConfigService]
 		}),
-		MailModule
+		MailModule,
+		TokenModule,
+		UserModule
 	],
 	providers: [
 		AccountResolver,
@@ -50,7 +58,11 @@ import { RedisModule } from './module/redis/redis.module'
 		RecoveryResolver,
 		RecoveryService,
 		TotpResolver,
-		TotpService
+		TotpService,
+		DeactivateResolver,
+		DeactivateService,
+		TokenService,
+		UserService
 	]
 })
 export class CoreModule {}

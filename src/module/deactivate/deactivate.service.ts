@@ -5,26 +5,24 @@ import { PrismaService } from '../../core/module/prisma/prisma.service'
 import { TokenService } from '../service/token/token.service'
 
 @Injectable()
-export class VerifyService {
+export class DeactivateService {
 	constructor(
 		private readonly prismaService: PrismaService,
 		private readonly tokenService: TokenService
 	) {}
 
-	async verifyEmail(token: string) {
-		const foundToken = await this.tokenService.verifyToken({
+	async deactivate(token: string) {
+		const { userId } = await this.tokenService.verifyToken({
 			token,
-			tokenType: TokenType.VERIFY_EMAIL
+			tokenType: TokenType.DEACTIVATE_ACCOUNT
 		})
 
-		const { userId: id } = foundToken
-
+		await this.prismaService.token.delete({ where: { token } })
 		return this.prismaService.user.update({
-			where: {
-				id
-			},
+			where: { id: userId },
 			data: {
-				isEmailVerified: true
+				isDeactivated: true,
+				deactivatedAt: new Date()
 			}
 		})
 	}

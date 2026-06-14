@@ -1,7 +1,8 @@
 import {
 	BadRequestException,
 	Injectable,
-	InternalServerErrorException
+	InternalServerErrorException,
+	NotFoundException
 } from '@nestjs/common'
 import { randomBytes } from 'crypto'
 import { encode } from 'hi-base32'
@@ -9,7 +10,7 @@ import { TOTP } from 'otpauth'
 import * as QRCode from 'qrcode'
 
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
-import { SessionUserModel, UserModel } from '../../../shared/model/user.model'
+import { PublicUser } from '../../../shared/types/user.type'
 
 import { TOTPInput } from './input/totp.input'
 
@@ -17,7 +18,9 @@ import { TOTPInput } from './input/totp.input'
 export class TotpService {
 	constructor(private readonly prismaService: PrismaService) {}
 
-	async enableTOTP(user: UserModel, input: TOTPInput) {
+	async enableTOTP(userId: string, input: TOTPInput) {
+		const user = await this._getUserById(userId)
+
 		if (user.isTotpEnabled)
 			throw new BadRequestException('TOTP is already in use')
 
@@ -44,7 +47,9 @@ export class TotpService {
 		})
 	}
 
-	async disableTOTP(user: UserModel, input: TOTPInput) {
+	async disableTOTP(userId: string, input: TOTPInput) {
+		const user = await this._getUserById(userId)
+
 		if (!user.isTotpEnabled)
 			throw new BadRequestException('TOTP is already disabled')
 
@@ -72,13 +77,16 @@ export class TotpService {
 		})
 	}
 
-	async generate(user: UserModel) {
+	async generate(userId: string) {
+		const user = await this._getUserById(userId)
 		const { username } = user
 		const secret = encode(randomBytes(15)).replace(/=/g, '').substring(0, 25)
+
 		await this.prismaService.user.update({
-			where: { id: user.id },
+			where: { username },
 			data: { totpSecret: secret }
 		})
+
 		const totp = new TOTP({
 			issuer: 'YuiiStream',
 			secret,
@@ -86,17 +94,14 @@ export class TotpService {
 			label: username,
 			digits: 6
 		})
+
 		const otpAuthUrl = totp.toString()
 		const qrCodeUrl = await QRCode.toDataURL(otpAuthUrl)
 
 		return { qrCodeUrl, secret }
 	}
 
-	private _verifyTOTP(
-		pincode: string,
-		totpSecret: string,
-		user: SessionUserModel
-	) {
+	private _verifyTOTP(pincode: string, totpSecret: string, user: PublicUser) {
 		const totp = new TOTP({
 			issuer: 'YuiiStream',
 			secret: totpSecret,
@@ -106,5 +111,16 @@ export class TotpService {
 		})
 
 		return totp.validate({ token: pincode }) !== null
+	}
+
+	private async _getUserById(userId: string) {
+		const user = await this.prismaService.user.findUnique({
+			where: { id: userId }
+		})
+
+		if (!user) {
+			throw new NotFoundException('User not found')
+		}
+		return user
 	}
 }

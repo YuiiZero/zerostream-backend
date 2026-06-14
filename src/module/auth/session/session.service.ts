@@ -7,13 +7,17 @@ import { InternalServerErrorException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { RedisClientType } from '@redis/client'
 import { Request, Response } from 'express'
-import type { Session, SessionData } from 'express-session'
+import type { SessionData } from 'express-session'
 
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
 import { RedisService } from '../../../core/module/redis/redis.service'
-import { SessionUserModel, UserModel } from '../../../shared/model/user.model'
+import { SessionModel } from '../../../shared/model/session.model'
+import { PublicUserModel } from '../../../shared/model/user.model'
+import { HttpHeader } from '../../../shared/types/type'
+import { SessionUser } from '../../../shared/types/user.type'
 import { addSessionPrefix } from '../../../shared/util/addPrefix.util'
 import { getSessionMetadata } from '../../../shared/util/getSessionMetadata'
+import { toSessionModel } from '../../../shared/util/toSessionModel.util'
 
 @Injectable()
 export class SessionService {
@@ -29,9 +33,9 @@ export class SessionService {
 		this.redisClient = redisService.getClient()
 	}
 
-	async getAllUserSessions(user: UserModel) {
+	async getAllUserSessions(userId: string) {
 		const found = await this.prismaService.user.findFirst({
-			where: { id: user.id },
+			where: { id: userId },
 			select: { sessionIDs: true }
 		})
 
@@ -40,7 +44,7 @@ export class SessionService {
 
 		const { sessionIDs } = found
 		const prefix = this.configService.getOrThrow<string>('REDIS_PREFIX')
-		const sessions: (Session & Partial<SessionData>)[] = await Promise.all(
+		const sessions: SessionData[] = await Promise.all(
 			sessionIDs.map(async sessionID => {
 				const sessionKey = prefix + sessionID
 				const sessionJson = await this.redisClient.GET(sessionKey)
@@ -51,24 +55,25 @@ export class SessionService {
 					)
 				}
 
-				const session: Session & Partial<SessionData> = JSON.parse(sessionJson)
+				const session: SessionData = JSON.parse(sessionJson)
 				return session
 			})
 		)
-
-		return sessions
+		const models: SessionModel[] = sessions.map(s => toSessionModel(s))
+		return models
 	}
 
-	async saveCurrentSession(req: Request, user: UserModel) {
-		const userAgent = req.headers['user-agent']
+	async saveCurrentSession(req: Request, publicUser: PublicUserModel) {
+		const userAgent = req.headers[HttpHeader.USER_AGENT]
 		const ip = req.ip
 
 		if (!userAgent)
 			throw new InternalServerErrorException('User-Agent is undefined')
 		if (!ip) throw new InternalServerErrorException('IP is undefined')
 
-		const sessionUser = await this._addSession(user, req.sessionID)
+		const sessionUser = await this._addSession(publicUser, req.sessionID)
 
+		req.session.sessID = req.sessionID
 		req.session.user = sessionUser
 		req.session.metadata = await getSessionMetadata(
 			this.configService,
@@ -77,26 +82,19 @@ export class SessionService {
 		)
 	}
 
-	deleteCurrentSession(req: Request, res: Response): Promise<void> {
+	async deleteCurrentSession(req: Request, res: Response): Promise<void> {
 		const session = req.session
 
-		return this._deleteSession(req.sessionID).then(
-			() =>
-				new Promise((resolve, reject) => {
-					session.destroy((err: unknown) => {
-						if (err)
-							return reject(
-								new InternalServerErrorException('Could not destroy session', {
-									cause: err
-								})
-							)
+		await this._deleteSession(req.sessionID)
 
-						res.clearCookie(this.sessionCookieName)
-
-						resolve()
-					})
-				})
-		)
+		session.destroy((err: Error) => {
+			if (err)
+				throw new InternalServerErrorException(
+					`Cannot destroy session: ${err.message}`,
+					{ cause: err }
+				)
+			res.clearCookie(this.sessionCookieName)
+		})
 	}
 
 	async deleteSession(req: Request, sessionID: string) {
@@ -105,13 +103,16 @@ export class SessionService {
 		await this._deleteSession(sessionID)
 	}
 
-	async deleteAllSessions(req: Request, { id }: SessionUserModel) {
-		const found = await this.prismaService.user.findFirst({
-			where: { id },
+	async deleteAllSessions(req: Request, email: string) {
+		const found = await this.prismaService.user.findUnique({
+			where: { email },
 			select: { sessionIDs: true }
 		})
+
 		if (!found)
-			throw new NotFoundException('Cannot delete sessions: wrong user id')
+			throw new NotFoundException(
+				`Cannot delete sessions: wrong user email ${email}`
+			)
 
 		const { sessionIDs } = found
 
@@ -123,12 +124,12 @@ export class SessionService {
 
 		await this.redisClient.DEL(sessionKeys)
 		await this.prismaService.user.update({
-			where: { id },
+			where: { email },
 			data: { sessionIDs: [] }
 		})
 	}
 
-	async deleteAllSessionsExceptCurrent(req: Request, { id }: SessionUserModel) {
+	async deleteAllSessionsExceptCurrent(req: Request, { id }: SessionUser) {
 		const currentSessionID = req.sessionID
 		const found = await this.prismaService.user.findFirst({
 			where: { id },
@@ -153,14 +154,29 @@ export class SessionService {
 		})
 	}
 
-	private async _addSession(user: UserModel, sessionID: string) {
-		const updated = await this.prismaService.user.update({
-			where: { id: user.id },
-			data: { sessionIDs: [...user.sessionIDs, sessionID] }
+	private async _addSession(
+		user: PublicUserModel,
+		sessionID: string
+	): Promise<SessionUser> {
+		const { username } = user
+		const current = await this.prismaService.user.findUnique({
+			where: { username }
 		})
 
-		const { email: _e, password: _p, ...returned } = updated
-		return returned
+		if (!current)
+			throw new NotFoundException(
+				`Cannot add session: user not found by username ${username}`
+			)
+
+		const updated = await this.prismaService.user.update({
+			where: { username },
+			data: { sessionIDs: [...current.sessionIDs, sessionID] },
+			select: {
+				id: true
+			}
+		})
+
+		return updated
 	}
 
 	private async _deleteSession(sessionID: string) {

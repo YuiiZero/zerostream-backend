@@ -1,15 +1,16 @@
-import { Context, Query, Resolver } from '@nestjs/graphql'
+import { Args, Context, Mutation, Query, Resolver } from '@nestjs/graphql'
+import { SessionData } from 'express-session'
 
 import { Authorization } from '../../../shared/decorator/authorization.decorator'
-import { CurrentUser } from '../../../shared/decorator/current-user.decorator'
+import { CurrentUserId } from '../../../shared/decorator/current-user-id.decorator'
 import { SessionMetadata } from '../../../shared/decorator/session-metadata.decorator'
 import {
 	SessionMetadataModel,
 	SessionModel
 } from '../../../shared/model/session.model'
-import { UserModel } from '../../../shared/model/user.model'
+import { SessionMetadata as SessionMetadataType } from '../../../shared/types/metadata.type'
 import { Ctx } from '../../../shared/types/type'
-import { SessionMetadata as SessionMetadataType } from '../../../shared/types/type'
+import { toSessionModel } from '../../../shared/util/toSessionModel.util'
 
 import { SessionService } from './session.service'
 
@@ -19,19 +20,32 @@ export class SessionResolver {
 
 	@Authorization()
 	@Query(() => SessionModel)
-	getCurrentSession(@Context() { req }: Ctx) {
-		return req.session
+	public getCurrentSession(@Context() { req }: Ctx): SessionModel {
+		const sessionData = req.session as SessionData
+		return toSessionModel(sessionData)
 	}
 
 	@Authorization()
 	@Query(() => [SessionModel])
-	getAllCurrentUserSessions(@CurrentUser() user: UserModel) {
-		return this.sessionService.getAllUserSessions(user)
+	public getAllCurrentUserSessions(
+		@CurrentUserId() userId: string
+	): Promise<SessionModel[]> {
+		return this.sessionService.getAllUserSessions(userId)
 	}
 
 	@Authorization()
 	@Query(() => SessionMetadataModel)
-	getSessionMetadata(@SessionMetadata() metadata: SessionMetadataType) {
+	public getSessionMetadata(@SessionMetadata() metadata: SessionMetadataType) {
 		return metadata
+	}
+
+	@Authorization()
+	@Mutation(() => Boolean)
+	public async revokeSession(
+		@Args('sessionID') sessID: string,
+		@Context() { req }: Ctx
+	) {
+		await this.sessionService.deleteSession(req, sessID)
+		return true
 	}
 }

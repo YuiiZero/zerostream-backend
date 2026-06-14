@@ -1,22 +1,32 @@
-import { Field, Float, Int, ObjectType } from '@nestjs/graphql'
+import {
+	Field,
+	Float,
+	GraphQLISODateTime,
+	Int,
+	ObjectType
+} from '@nestjs/graphql'
 import { DeviceType } from 'device-detector-js/dist/typings/device'
+
+import { CookieGql } from '../types/graphql.type'
+import { Nullable } from '../types/type'
+import { SessionUser } from '../types/user.type'
 
 import { SessionUserModel } from './user.model'
 
 @ObjectType()
-class CookieModel {
-	@Field(() => Int)
-	originalMaxAge!: number
-	@Field()
-	expires!: string
-	@Field()
-	secure!: boolean
-	@Field()
-	httpOnly!: boolean
-	@Field()
-	path!: string
-	@Field(() => String)
-	sameSite!: 'lax' | 'strict' | 'none'
+export class CookieModel implements CookieGql {
+	@Field(() => Int, { nullable: true })
+	originalMaxAge!: number | null
+	@Field(() => GraphQLISODateTime, { nullable: true })
+	expires?: Date | null | undefined
+	@Field({ nullable: true })
+	secure?: boolean
+	@Field({ nullable: true })
+	httpOnly?: boolean
+	@Field({ nullable: true })
+	path?: string
+	@Field({ nullable: true })
+	sameSite?: 'lax' | 'strict' | 'none'
 }
 
 @ObjectType()
@@ -33,19 +43,19 @@ class LocationModel {
 	@Field(() => Int)
 	geoname_id!: number
 	@Field(() => String, { nullable: true })
-	capital!: string | null
+	capital!: string | Nullable
 	@Field(() => [LanguagesModel])
 	languages!: LanguagesModel[]
 	@Field(() => String, { nullable: true })
-	country_flag!: string | null
+	country_flag!: string | Nullable
 	@Field(() => String, { nullable: true })
-	country_flag_emoji!: string | null
+	country_flag_emoji!: string | Nullable
 	@Field(() => String, { nullable: true })
-	country_flag_emoji_unicode!: string | null
+	country_flag_emoji_unicode!: string | Nullable
 	@Field(() => String, { nullable: true })
-	calling_code!: string | null
+	calling_code!: string | Nullable
 	@Field(() => Boolean, { nullable: true })
-	is_eu!: boolean | null
+	is_eu!: boolean | Nullable
 }
 
 @ObjectType()
@@ -78,28 +88,26 @@ class CurrencyModel {
 @ObjectType()
 class ConnectionModel {
 	@Field(() => Int, { nullable: true })
-	asn!: number | null
+	asn!: number | Nullable
 	@Field(() => String, { nullable: true })
-	isp!: string | null
+	isp!: string | Nullable
 	@Field(() => String, { nullable: true })
-	sld!: string | null
+	sld!: string | Nullable
 	@Field(() => String, { nullable: true })
-	tld!: string | null
+	tld!: string | Nullable
 	@Field(() => String, { nullable: true })
-	carrier!: string | null
+	carrier!: string | Nullable
 	@Field(() => Boolean, { nullable: true })
-	home!: boolean | null
+	home!: boolean | Nullable
 	@Field(() => String, { nullable: true })
-	organization_type!: string | null
+	organization_type!: string | Nullable
 	@Field(() => String, { nullable: true })
-	isic_code!: string | null
+	isic_code!: string | Nullable
 	@Field(() => String, { nullable: true })
-	naics_code!: string | null
+	naics_code!: string | Nullable
 }
 @ObjectType()
 export class LocationDetailsModel {
-	@Field()
-	ip!: string
 	@Field()
 	type!: string
 	@Field()
@@ -111,25 +119,25 @@ export class LocationDetailsModel {
 	@Field()
 	country_name!: string
 	@Field(() => String, { nullable: true })
-	region_code!: string | null
+	region_code!: string | Nullable
 	@Field(() => String, { nullable: true })
-	city!: string | null
+	city!: string | Nullable
 	@Field(() => String, { nullable: true })
-	zip!: string | null
+	zip!: string | Nullable
 	@Field(() => Float, { nullable: true })
-	latitude!: number | null
+	latitude!: number | Nullable
 	@Field(() => Float, { nullable: true })
-	longitude!: number | null
+	longitude!: number | Nullable
 	@Field(() => String, { nullable: true })
-	msa!: string | null
+	msa!: string | Nullable
 	@Field(() => String, { nullable: true })
-	dma!: string | null
+	dma!: string | Nullable
 	@Field(() => String, { nullable: true })
-	radius!: string | null
+	radius!: string | Nullable
 	@Field(() => String, { nullable: true })
-	ip_routing_type!: string | null
+	ip_routing_type!: string | Nullable
 	@Field(() => String, { nullable: true })
-	connection_type!: string | null
+	connection_type!: string | Nullable
 	@Field(() => LocationModel)
 	location!: LocationModel
 	@Field(() => TimeZoneModel)
@@ -177,11 +185,11 @@ class OsModel {
 @ObjectType()
 export class DeviceMetadataModel {
 	@Field(() => ClientModel, { nullable: true })
-	client!: ClientModel | null
+	client!: ClientModel | Nullable
 	@Field(() => DeviceModel, { nullable: true })
-	device!: DeviceModel | null
+	device!: DeviceModel | Nullable
 	@Field(() => OsModel, { nullable: true })
-	os!: OsModel | null
+	os!: OsModel | Nullable
 }
 
 @ObjectType()
@@ -196,10 +204,13 @@ export class SessionMetadataModel {
 
 @ObjectType()
 export class SessionModel {
+	@Field()
+	sessID!: string
+
 	@Field(() => CookieModel)
 	cookie!: CookieModel
 	@Field(() => SessionUserModel)
-	user!: SessionUserModel
+	user!: SessionUser
 	@Field(() => SessionMetadataModel)
 	metadata!: SessionMetadataModel
 }

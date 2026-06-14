@@ -3,7 +3,7 @@ import axios from 'axios'
 import DeviceDetector from 'device-detector-js'
 
 import { locationDetailsPlaceholder } from '../placeholder/session-metadata.placeholder'
-import { LocationLookupResult } from '../types/type'
+import { LocationLookupResult } from '../types/metadata.type'
 
 import { isDev } from './isDev.util'
 
