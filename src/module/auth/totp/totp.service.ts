@@ -2,7 +2,8 @@ import {
 	BadRequestException,
 	Injectable,
 	InternalServerErrorException,
-	NotFoundException
+	NotFoundException,
+	UnauthorizedException
 } from '@nestjs/common'
 import { randomBytes } from 'crypto'
 import { encode } from 'hi-base32'
@@ -10,7 +11,7 @@ import { TOTP } from 'otpauth'
 import * as QRCode from 'qrcode'
 
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
-import { PublicUser } from '../../../shared/types/user.type'
+import { GenerateTOTPModel } from '../../../shared/model/generate-totp.model'
 
 import { TOTPInput } from './input/totp.input'
 
@@ -34,7 +35,7 @@ export class TotpService {
 				'Cannot enable TOTP: secret is null'
 			)
 
-		if (!this._verifyTOTP(pincode, totpSecret, user))
+		if (!this.verifyTOTP(pincode, totpSecret))
 			throw new BadRequestException('Cannot enable TOTP: wrong pincode')
 
 		await this.prismaService.user.update({
@@ -63,7 +64,7 @@ export class TotpService {
 				'Cannot disable TOTP: secret is null'
 			)
 
-		if (!this._verifyTOTP(pincode, totpSecret, user))
+		if (!this.verifyTOTP(pincode, totpSecret))
 			throw new BadRequestException('Cannot disable TOTP: wrong pincode')
 
 		await this.prismaService.user.update({
@@ -77,7 +78,7 @@ export class TotpService {
 		})
 	}
 
-	async generate(userId: string) {
+	async generate(userId: string): Promise<GenerateTOTPModel> {
 		const user = await this._getUserById(userId)
 		const { username } = user
 		const secret = encode(randomBytes(15)).replace(/=/g, '').substring(0, 25)
@@ -101,16 +102,21 @@ export class TotpService {
 		return { qrCodeUrl, secret }
 	}
 
-	private _verifyTOTP(pincode: string, totpSecret: string, user: PublicUser) {
-		const totp = new TOTP({
-			issuer: 'YuiiStream',
-			secret: totpSecret,
-			algorithm: 'SHA1',
-			label: user.username,
-			digits: 6
-		})
+	public verifyTOTP(
+		pincode: string | null,
+		totpSecret: string | null
+	): boolean {
+		if (!totpSecret)
+			throw new InternalServerErrorException('TOTP secret is null')
+		if (!pincode) throw new UnauthorizedException('Pincode not provided')
 
-		return totp.validate({ token: pincode }) !== null
+		const totp = new TOTP({
+			secret: totpSecret,
+			algorithm: 'SHA1'
+		})
+		const delta = totp.validate({ token: pincode })
+
+		return delta !== null
 	}
 
 	private async _getUserById(userId: string) {

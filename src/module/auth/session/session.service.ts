@@ -87,13 +87,20 @@ export class SessionService {
 
 		await this._deleteSession(req.sessionID)
 
-		session.destroy((err: Error) => {
-			if (err)
-				throw new InternalServerErrorException(
-					`Cannot destroy session: ${err.message}`,
-					{ cause: err }
-				)
-			res.clearCookie(this.sessionCookieName)
+		await new Promise<void>((resolve, reject) => {
+			session.destroy((err: Error) => {
+				if (err)
+					reject(
+						new InternalServerErrorException(
+							`Cannot destroy session: ${err.message}`,
+							{ cause: err }
+						)
+					)
+
+				res.clearCookie(this.sessionCookieName)
+
+				resolve()
+			})
 		})
 	}
 
