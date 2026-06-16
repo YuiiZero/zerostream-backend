@@ -1,5 +1,6 @@
-import { Global, Injectable, NotFoundException } from '@nestjs/common'
+import { Injectable, NotFoundException } from '@nestjs/common'
 
+import { User } from '../../../../prisma/generated/prisma/client'
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
 import {
 	PrivateUser,
@@ -7,7 +8,6 @@ import {
 	SessionUser
 } from '../../../shared/types/user.type'
 
-@Global()
 @Injectable()
 export class UserService {
 	constructor(private readonly prismaService: PrismaService) {}
@@ -30,9 +30,9 @@ export class UserService {
 		return { id } as SessionUser
 	}
 
-	public async getById(userId: string) {
-		const user = await this.prismaService.user.findUnique({
-			where: { id: userId }
+	public async getUnique<K extends UniqueUserField>(key: K, value: User[K]) {
+		const user = await this.prismaService.user.findFirst({
+			where: { [key]: value }
 		})
 
 		if (!user) throw new NotFoundException('User not found')
@@ -40,3 +40,5 @@ export class UserService {
 		return user
 	}
 }
+
+type UniqueUserField = Extract<keyof User, 'id' | 'email' | 'username'>
