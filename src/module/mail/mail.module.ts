@@ -2,9 +2,9 @@ import { MailerModule } from '@nestjs-modules/mailer'
 import { Global, Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 
-import { TokenModule } from '../../../module/service/token/token.module'
-import { TokenService } from '../../../module/service/token/token.service'
-import { getMailerConf } from '../../conf/getMailerConf'
+import { getMailerConf } from '../../core/conf/getMailerConf'
+import { TokenModule } from '../service/token/token.module'
+import { TokenService } from '../service/token/token.service'
 
 import { MailResolver } from './mail.resolver'
 import { MailService } from './mail.service'

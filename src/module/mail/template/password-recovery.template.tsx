@@ -7,7 +7,7 @@ import {
 } from 'react-email'
 
 import { EmailLayout } from './email-layout'
-import { SessionMetadata } from '../../../../shared/types/metadata.type'
+import { SessionMetadata } from '../../../shared/types/metadata.type'
 
 interface PasswordRecoveryTemplateProps {
 	domain: string

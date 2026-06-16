@@ -1,7 +1,7 @@
 import { Args, Context, Mutation, Resolver } from '@nestjs/graphql'
 
-import { Ctx } from '../../shared/types/type'
-import { SessionService } from '../auth/session/session.service'
+import { Ctx } from '../../../shared/types/type'
+import { SessionService } from '../../auth/session/session.service'
 
 import { VerifyEmailInput } from './input/verify-email.input'
 import { VerifyService } from './verify.service'

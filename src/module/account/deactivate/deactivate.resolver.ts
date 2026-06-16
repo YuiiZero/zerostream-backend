@@ -1,10 +1,10 @@
 import { Args, Context, Mutation, Resolver } from '@nestjs/graphql'
 
-import { Authorization } from '../../shared/decorator/authorization.decorator'
-import { CurrentUserId } from '../../shared/decorator/current-user-id.decorator'
-import { DeactivatedModel } from '../../shared/model/deactivated.model'
-import { Ctx } from '../../shared/types/type'
-import { SessionService } from '../auth/session/session.service'
+import { Authorization } from '../../../shared/decorator/authorization.decorator'
+import { CurrentUserId } from '../../../shared/decorator/current-user-id.decorator'
+import { DeactivatedModel } from '../../../shared/model/deactivated.model'
+import { Ctx } from '../../../shared/types/type'
+import { SessionService } from '../../auth/session/session.service'
 
 import { DeactivateService } from './deactivate.service'
 import { DeactivateAccountInput } from './input/deactivate-account.input'

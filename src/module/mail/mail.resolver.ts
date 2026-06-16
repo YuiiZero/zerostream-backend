@@ -1,14 +1,13 @@
-import { NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Args, Mutation, Resolver } from '@nestjs/graphql'
 import { StringValue } from 'ms'
 
-import { TokenService } from '../../../module/service/token/token.service'
-import { Authorization } from '../../../shared/decorator/authorization.decorator'
-import { CurrentUserId } from '../../../shared/decorator/current-user-id.decorator'
-import { SessionMetadata } from '../../../shared/decorator/session-metadata.decorator'
-import { SessionMetadata as SessionMetadataType } from '../../../shared/types/metadata.type'
-import { PrismaService } from '../prisma/prisma.service'
+import { Authorization } from '../../shared/decorator/authorization.decorator'
+import { CurrentUserId } from '../../shared/decorator/current-user-id.decorator'
+import { SessionMetadata } from '../../shared/decorator/session-metadata.decorator'
+import { SessionMetadata as SessionMetadataType } from '../../shared/types/metadata.type'
+import { TokenService } from '../service/token/token.service'
+import { UserService } from '../service/user/user.service'
 
 import { MailService } from './mail.service'
 
@@ -18,15 +17,15 @@ export class MailResolver {
 	constructor(
 		private readonly mailService: MailService,
 		private readonly configService: ConfigService,
-		private readonly prismaService: PrismaService,
-		private readonly tokenService: TokenService
+		private readonly tokenService: TokenService,
+		private readonly userService: UserService
 	) {
 		this.allowedOrigin = this.configService.getOrThrow('ALLOWED_ORIGIN')
 	}
 
 	@Mutation(() => Boolean)
 	async sendEmailVerifiationEmail(@Args('to') to: string): Promise<boolean> {
-		const user = await this._getCurrentUserByEmail(to)
+		const user = await this.userService.getUnique('email', to)
 		const tokenObject =
 			await this.tokenService.generateEmailVerificationToken(user)
 		const { token } = tokenObject
@@ -45,7 +44,7 @@ export class MailResolver {
 		@Args('to') to: string,
 		@SessionMetadata() metadata: SessionMetadataType
 	): Promise<boolean> {
-		const user = await this._getCurrentUserByEmail(to)
+		const user = await this.userService.getUnique('email', to)
 		const tokenObject =
 			await this.tokenService.generatePasswordRecoveryToken(user)
 		const { token } = tokenObject
@@ -66,7 +65,7 @@ export class MailResolver {
 		@CurrentUserId() userId: string,
 		@SessionMetadata() metadata: SessionMetadataType
 	): Promise<boolean> {
-		const user = await this._getCurrentUserById(userId)
+		const user = await this.userService.getUnique('id', userId)
 		const tokenObject =
 			await this.tokenService.generateAccountDeactivationToken(user)
 		const { token } = tokenObject
@@ -84,23 +83,13 @@ export class MailResolver {
 		return true
 	}
 
-	private async _getCurrentUserByEmail(email: string) {
-		const user = await this.prismaService.user.findFirst({
-			where: { email }
+	@Mutation(() => Boolean)
+	sendAccountDeletionEmail(@Args('to') to: string): boolean {
+		this.mailService.sendAccountDeletionEmail({
+			domain: this.allowedOrigin,
+			to
 		})
 
-		if (!user) throw new NotFoundException('Cannot send email: user not found')
-
-		return user
-	}
-
-	private async _getCurrentUserById(id: string) {
-		const user = await this.prismaService.user.findFirst({
-			where: { id }
-		})
-
-		if (!user) throw new NotFoundException('Cannot send email: user not found')
-
-		return user
+		return true
 	}
 }

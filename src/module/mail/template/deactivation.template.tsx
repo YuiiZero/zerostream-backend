@@ -8,8 +8,8 @@ import {
 import { StringValue } from 'ms'
 
 import { EmailLayout } from './email-layout'
-import { SessionMetadata } from '../../../../shared/types/metadata.type'
-import { TimeConverter } from '../../../../shared/util/TimeConverter.util'
+import { SessionMetadata } from '../../../shared/types/metadata.type'
+import { TimeConverter } from '../../../shared/util/TimeConverter.util'
 
 interface DeactivationTemplateProps {
 	token: string

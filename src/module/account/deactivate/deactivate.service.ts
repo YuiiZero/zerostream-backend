@@ -6,12 +6,12 @@ import {
 } from '@nestjs/common'
 import { verify } from 'argon2'
 
-import { TokenType } from '../../../prisma/generated/prisma/enums'
-import { PrismaService } from '../../core/module/prisma/prisma.service'
-import { handleException } from '../../shared/util/handleException.util'
-import { TotpService } from '../auth/totp/totp.service'
-import { TokenService } from '../service/token/token.service'
-import { UserService } from '../service/user/user.service'
+import { TokenType } from '../../../../prisma/generated/prisma/enums'
+import { PrismaService } from '../../../core/module/prisma/prisma.service'
+import { handleException } from '../../../shared/util/handleException.util'
+import { TotpService } from '../../auth/totp/totp.service'
+import { TokenService } from '../../service/token/token.service'
+import { UserService } from '../../service/user/user.service'
 
 @Injectable()
 export class DeactivateService {
@@ -28,7 +28,7 @@ export class DeactivateService {
 				token,
 				tokenType: TokenType.DEACTIVATE_ACCOUNT
 			})
-			const foundUser = await this.userService.getById(userId)
+			const foundUser = await this.userService.getUnique('id', userId)
 
 			if (foundUser.isDeactivated)
 				throw new BadRequestException('User is already deactivated')

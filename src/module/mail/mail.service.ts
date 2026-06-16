@@ -4,9 +4,10 @@ import { ConfigService } from '@nestjs/config'
 import { StringValue } from 'ms'
 import { render } from 'react-email'
 
-import { SessionMetadata } from '../../../shared/types/metadata.type'
+import { SessionMetadata } from '../../shared/types/metadata.type'
 
 import { DeactivationTemplate } from './template/deactivation.template'
+import { DeletionTemplate } from './template/deletion.template'
 import { PasswordRecoveryTemplate } from './template/password-recovery.template'
 import { VerificationTemplate } from './template/verification.template'
 
@@ -23,6 +24,14 @@ export class MailService {
 		const html = await render(
 			DeactivationTemplate({ token, metadata, pincodeTTL })
 		)
+
+		this._sendEmail({ html, subject, to })
+	}
+
+	async sendAccountDeletionEmail(options: SendDeletionEmailOptions) {
+		const subject = 'Account deletion'
+		const { domain, to } = options
+		const html = await render(DeletionTemplate({ domain }))
 
 		this._sendEmail({ html, subject, to })
 	}
@@ -80,5 +89,9 @@ interface SendVerificationEmailOptions extends EmailTokenHeader {
 
 interface SendPasswordRecoveryOptions extends EmailTokenHeader {
 	metadata: SessionMetadata
+	domain: string
+}
+
+interface SendDeletionEmailOptions extends EmailHeader {
 	domain: string
 }

@@ -135,6 +135,7 @@ type Mutation {
   resetPasswordUnauthorized(resetPasswordInput: ResetPasswordInput!): PublicUserModel!
   revokeSession(sessionID: String!): Boolean!
   sendAccountDeactivationEmail: Boolean!
+  sendAccountDeletionEmail(to: String!): Boolean!
   sendEmailVerifiationEmail(to: String!): Boolean!
   sendPasswordRecoveryEmail(to: String!): Boolean!
   verifyEmail(verifyEmailInput: VerifyEmailInput!): Boolean!

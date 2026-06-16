@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common'
 import { hash } from 'argon2'
 
-import { TokenType } from '../../../prisma/generated/prisma/enums'
-import { PrismaService } from '../../core/module/prisma/prisma.service'
-import { TokenService } from '../service/token/token.service'
+import { TokenType } from '../../../../prisma/generated/prisma/enums'
+import { PrismaService } from '../../../core/module/prisma/prisma.service'
+import { TokenService } from '../../service/token/token.service'
 
 export interface ResetPasswordOpts {
 	email: string
