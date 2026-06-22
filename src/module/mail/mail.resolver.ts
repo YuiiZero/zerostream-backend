@@ -24,13 +24,13 @@ export class MailResolver {
 	}
 
 	@Mutation(() => Boolean)
-	async sendEmailVerifiationEmail(@Args('to') to: string): Promise<boolean> {
+	async sendEmailVerificationEmail(@Args('to') to: string): Promise<boolean> {
 		const user = await this.userService.getUnique('email', to)
 		const tokenObject =
 			await this.tokenService.generateEmailVerificationToken(user)
 		const { token } = tokenObject
 
-		this.mailService.sendEmailVerificationEmail({
+		await this.mailService.sendEmailVerificationEmail({
 			domain: this.allowedOrigin,
 			to,
 			token
@@ -49,7 +49,7 @@ export class MailResolver {
 			await this.tokenService.generatePasswordRecoveryToken(user)
 		const { token } = tokenObject
 
-		this.mailService.sendPasswordRecoveryEmail({
+		await this.mailService.sendPasswordRecoveryEmail({
 			domain: this.allowedOrigin,
 			to,
 			token,
@@ -62,10 +62,10 @@ export class MailResolver {
 	@Authorization()
 	@Mutation(() => Boolean)
 	async sendAccountDeactivationEmail(
-		@CurrentUserId() userId: string,
+		@CurrentUserId() id: string,
 		@SessionMetadata() metadata: SessionMetadataType
 	): Promise<boolean> {
-		const user = await this.userService.getUnique('id', userId)
+		const user = await this.userService.getUnique('id', id)
 		const tokenObject =
 			await this.tokenService.generateAccountDeactivationToken(user)
 		const { token } = tokenObject
@@ -73,9 +73,9 @@ export class MailResolver {
 			'DEACTIVATION_TOKEN_TTL'
 		)
 
-		this.mailService.sendAccountDeactivationEmail({
-			to: user.email,
+		await this.mailService.sendAccountDeactivationEmail({
 			token,
+			to: user.email,
 			metadata,
 			pincodeTTL
 		})
@@ -84,8 +84,8 @@ export class MailResolver {
 	}
 
 	@Mutation(() => Boolean)
-	sendAccountDeletionEmail(@Args('to') to: string): boolean {
-		this.mailService.sendAccountDeletionEmail({
+	async sendAccountDeletionEmail(@Args('to') to: string): Promise<boolean> {
+		await this.mailService.sendAccountDeletionEmail({
 			domain: this.allowedOrigin,
 			to
 		})

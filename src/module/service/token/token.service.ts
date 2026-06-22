@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { randomUUID } from 'crypto'
+import ms, { StringValue } from 'ms'
 
 import { TokenType } from '../../../../prisma/generated/prisma/enums'
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
@@ -14,19 +15,22 @@ import { generateCode } from '../../../shared/util/generateCode.util'
 
 @Injectable()
 export class TokenService {
-	VERIFICATION_TOKEN_TTL: number
-	DEACTIVATION_TOKEN_TTL: number
+	VERIFICATION_TOKEN_TTL: StringValue
+	DEACTIVATION_TOKEN_TTL: StringValue
+	RECOVERY_TOKEN_TTL: StringValue
 
 	constructor(
 		private readonly prismaService: PrismaService,
 		private readonly configService: ConfigService
 	) {
-		this.DEACTIVATION_TOKEN_TTL = +configService.getOrThrow(
+		this.DEACTIVATION_TOKEN_TTL = configService.getOrThrow<StringValue>(
 			'DEACTIVATION_TOKEN_TTL'
 		)
-		this.VERIFICATION_TOKEN_TTL = +configService.getOrThrow(
+		this.VERIFICATION_TOKEN_TTL = configService.getOrThrow<StringValue>(
 			'VERIFICATION_TOKEN_TTL'
 		)
+		this.RECOVERY_TOKEN_TTL =
+			configService.getOrThrow<StringValue>('RECOVERY_TOKEN_TTL')
 	}
 
 	async verifyToken(options: VerifyTokenOptions): Promise<Token> {
@@ -57,14 +61,16 @@ export class TokenService {
 	async generateEmailVerificationToken(user: SessionUser) {
 		return this._generateToken({
 			type: TokenType.VERIFY_EMAIL,
-			user
+			user,
+			ttl: this.VERIFICATION_TOKEN_TTL
 		})
 	}
 
 	async generatePasswordRecoveryToken(user: SessionUser) {
 		return this._generateToken({
 			type: TokenType.RESET_PASSWORD,
-			user
+			user,
+			ttl: this.RECOVERY_TOKEN_TTL
 		})
 	}
 
@@ -72,17 +78,19 @@ export class TokenService {
 		return this._generateToken({
 			type: TokenType.DEACTIVATE_ACCOUNT,
 			user,
-			isUUID: false
+			isUUID: false,
+			ttl: this.DEACTIVATION_TOKEN_TTL
 		})
 	}
 
 	private async _generateToken({
 		isUUID = true,
 		type,
-		user
+		user,
+		ttl
 	}: GenerateTokenOptions) {
 		const token = isUUID ? randomUUID() : generateCode(6)
-		const expires = new Date(Date.now() + this.DEACTIVATION_TOKEN_TTL)
+		const expires = new Date(Date.now() + ms(ttl))
 		const existingToken = await this.prismaService.token.findFirst({
 			where: { userId: user.id, type }
 		})
@@ -100,6 +108,7 @@ interface GenerateTokenOptions {
 	isUUID?: boolean
 	type: TokenType
 	user: SessionUser
+	ttl: StringValue
 }
 
 interface VerifyTokenOptions {

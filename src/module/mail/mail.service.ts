@@ -20,11 +20,10 @@ export class MailService {
 
 	async sendAccountDeactivationEmail(options: SendDeactivationEmailOptions) {
 		const subject = 'Account deactivation'
-		const { token, metadata, pincodeTTL, to } = options
+		const { metadata, pincodeTTL, token, to } = options
 		const html = await render(
 			DeactivationTemplate({ token, metadata, pincodeTTL })
 		)
-
 		this._sendEmail({ html, subject, to })
 	}
 
@@ -45,7 +44,7 @@ export class MailService {
 	}
 
 	async sendPasswordRecoveryEmail(options: SendPasswordRecoveryOptions) {
-		const subject = 'Password verification'
+		const subject = 'Password recovery'
 		const { token, metadata, domain, to } = options
 		const html = await render(
 			PasswordRecoveryTemplate({ token, metadata, domain })
@@ -56,8 +55,7 @@ export class MailService {
 
 	private _sendEmail(options: SendEmailOptions) {
 		const { to, html, subject } = options
-
-		this.mailerService.sendMail({
+		return this.mailerService.sendMail({
 			from: this.configService.getOrThrow<string>('EMAIL_FROM'),
 			to,
 			subject,

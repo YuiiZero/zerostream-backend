@@ -5,11 +5,10 @@ import {
 	Text
 } from 'react-email'
 
-import { StringValue } from 'ms'
+import ms, { StringValue } from 'ms'
 
 import { EmailLayout } from './email-layout'
 import { SessionMetadata } from '../../../shared/types/metadata.type'
-import { TimeConverter } from '../../../shared/util/TimeConverter.util'
 
 interface DeactivationTemplateProps {
 	token: string
@@ -22,10 +21,7 @@ export function DeactivationTemplate({
 	metadata,
 	pincodeTTL
 }: DeactivationTemplateProps) {
-	const timeConverter = new TimeConverter()
-
-	const ttlMinutes =
-		timeConverter.getMinutes(pincodeTTL)
+	const ttlMinutes = ms(pincodeTTL) / 1000 / 60
 
 	const client = metadata.device.client?.name
 	const os = metadata.device.os?.name

@@ -2,6 +2,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo'
 import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { GraphQLModule } from '@nestjs/graphql'
+import { ScheduleModule } from '@nestjs/schedule'
 
 import { DeactivateResolver } from '../module/account/deactivate/deactivate.resolver'
 import { DeactivateService } from '../module/account/deactivate/deactivate.service'
@@ -15,13 +16,14 @@ import { SessionResolver } from '../module/auth/session/session.resolver'
 import { SessionService } from '../module/auth/session/session.service'
 import { TotpResolver } from '../module/auth/totp/totp.resolver'
 import { TotpService } from '../module/auth/totp/totp.service'
+import { CronModule } from '../module/cron/cron.module'
+import { CronService } from '../module/cron/cron.service'
 import { MailModule } from '../module/mail/mail.module'
 import { MailResolver } from '../module/mail/mail.resolver'
 import { TokenModule } from '../module/service/token/token.module'
 import { TokenService } from '../module/service/token/token.service'
 import { UserModule } from '../module/service/user/user.module'
 import { UserService } from '../module/service/user/user.service'
-import { TimeConverter } from '../shared/util/TimeConverter.util'
 
 import { getGraphqlConf } from './conf/getGraphqlConf'
 import { PrismaModule } from './module/prisma/prisma.module'
@@ -44,12 +46,13 @@ import { RedisModule } from './module/redis/redis.module'
 		}),
 		MailModule,
 		TokenModule,
-		UserModule
+		UserModule,
+		ScheduleModule.forRoot(),
+		CronModule
 	],
 	providers: [
 		AccountResolver,
 		AccountService,
-		TimeConverter,
 		SessionResolver,
 		SessionService,
 		VerifyService,
@@ -62,7 +65,8 @@ import { RedisModule } from './module/redis/redis.module'
 		DeactivateResolver,
 		DeactivateService,
 		TokenService,
-		UserService
+		UserService,
+		CronService
 	]
 })
 export class CoreModule {}
