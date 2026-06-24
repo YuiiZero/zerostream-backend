@@ -14,14 +14,15 @@ import { UserService } from '../../service/user/user.service'
 import { SessionService } from '../session/session.service'
 
 import { AccountService } from './account.service'
+import { ChangePasswordInput } from './input/ChangePassword.input.ts'
 import { LoginInput } from './input/Login.input'
 import { RegisterInput } from './input/Register.input'
 
 @Resolver()
 export class AccountResolver {
-	sessionCookieName: string
+	public readonly sessionCookieName: string
 
-	constructor(
+	public constructor(
 		private readonly accountService: AccountService,
 		private readonly configService: ConfigService,
 		private readonly sessionService: SessionService,
@@ -34,7 +35,7 @@ export class AccountResolver {
 
 	@Unauthorized()
 	@Mutation(() => MessageModel)
-	async register(
+	public async register(
 		@Args('registerCredentials')
 		registerInput: RegisterInput
 	): Promise<MessageModel> {
@@ -55,7 +56,7 @@ export class AccountResolver {
 
 	@Unauthorized()
 	@Mutation(() => Boolean)
-	async login(
+	public async login(
 		@Context() { req }: Ctx,
 		@Args('loginCredentials', LoginPipe)
 		loginInput: LoginInput
@@ -68,7 +69,7 @@ export class AccountResolver {
 
 	@Authorization()
 	@Mutation(() => Boolean)
-	async logout(@Context() { req, res }: Ctx): Promise<boolean> {
+	public async logout(@Context() { req, res }: Ctx): Promise<boolean> {
 		await this.sessionService.deleteCurrentSession(req, res)
 
 		return true
@@ -76,7 +77,7 @@ export class AccountResolver {
 
 	@Authorization()
 	@Mutation(() => Boolean)
-	async deleteSession(
+	public async deleteSession(
 		@Context() { req }: Ctx,
 		@Args('sessionID') sessionID: string
 	): Promise<boolean> {
@@ -87,7 +88,16 @@ export class AccountResolver {
 
 	@Authorization()
 	@Query(() => PrivateUserModel)
-	async me(@CurrentUserId() id: string) {
+	public async me(@CurrentUserId() id: string): Promise<PrivateUserModel> {
 		return this.accountService.me(id)
+	}
+
+	@Authorization()
+	@Mutation(() => Boolean)
+	public async changePassword(
+		@Args('changePasswordInput') input: ChangePasswordInput,
+		@CurrentUserId() userId: string
+	): Promise<boolean> {
+		return this.accountService.changePassword(userId, input)
 	}
 }

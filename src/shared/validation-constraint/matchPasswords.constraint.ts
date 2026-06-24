@@ -4,7 +4,7 @@ import {
 	ValidatorConstraintInterface
 } from 'class-validator'
 
-import { ResetPasswordInput } from '../../module/account/recovery/input/reset-password.input'
+import { ResetPasswordInput } from '../../module/account/recovery/input/recovery.input'
 
 @ValidatorConstraint()
 export class MatchPasswordsConstraint implements ValidatorConstraintInterface {

@@ -13,7 +13,7 @@ import {
 export class RegisterInput {
 	@Field()
 	@IsEmail()
-	email!: string
+	public email!: string
 
 	@Field()
 	@IsString()
@@ -21,28 +21,28 @@ export class RegisterInput {
 	@Matches(/^[a-zA-Z0-9_]+$/, {
 		message: 'Username can only contain letters, numbers, and underscores'
 	})
-	username!: string
+	public username!: string
 
 	@Field()
 	@IsString()
 	@MinLength(6)
-	password!: string
+	public password!: string
 
 	@Field({ nullable: true })
 	@IsOptional()
 	@IsString()
 	@IsNotEmpty()
-	nickname?: string
+	public nickname?: string
 
 	@Field({ nullable: true })
 	@IsOptional()
 	@IsString()
 	@IsNotEmpty()
-	bio?: string
+	public bio?: string
 
 	@Field({ nullable: true })
 	@IsOptional()
 	@IsString()
 	@IsNotEmpty()
-	avatar?: string
+	public avatar?: string
 }

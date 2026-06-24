@@ -15,11 +15,11 @@ import { generateCode } from '../../../shared/util/generateCode.util'
 
 @Injectable()
 export class TokenService {
-	VERIFICATION_TOKEN_TTL: StringValue
-	DEACTIVATION_TOKEN_TTL: StringValue
-	RECOVERY_TOKEN_TTL: StringValue
+	private readonly VERIFICATION_TOKEN_TTL: StringValue
+	private readonly DEACTIVATION_TOKEN_TTL: StringValue
+	private readonly RECOVERY_TOKEN_TTL: StringValue
 
-	constructor(
+	public constructor(
 		private readonly prismaService: PrismaService,
 		private readonly configService: ConfigService
 	) {
@@ -33,7 +33,7 @@ export class TokenService {
 			configService.getOrThrow<StringValue>('RECOVERY_TOKEN_TTL')
 	}
 
-	async verifyToken(options: VerifyTokenOptions): Promise<Token> {
+	public async verifyToken(options: VerifyTokenOptions): Promise<Token> {
 		const { token, tokenType } = options
 		const foundToken = await this.prismaService.token.findUnique({
 			where: { token, type: tokenType }
@@ -48,7 +48,7 @@ export class TokenService {
 		return foundToken
 	}
 
-	async getRelatedUser(token: Token) {
+	public async getRelatedUser(token: Token) {
 		const relatedUser = await this.prismaService.user.findFirst({
 			where: { id: token.userId }
 		})
@@ -58,7 +58,7 @@ export class TokenService {
 		return relatedUser
 	}
 
-	async generateEmailVerificationToken(user: SessionUser) {
+	public async generateEmailVerificationToken(user: SessionUser) {
 		return this._generateToken({
 			type: TokenType.VERIFY_EMAIL,
 			user,
@@ -66,7 +66,7 @@ export class TokenService {
 		})
 	}
 
-	async generatePasswordRecoveryToken(user: SessionUser) {
+	public async generatePasswordRecoveryToken(user: SessionUser) {
 		return this._generateToken({
 			type: TokenType.RESET_PASSWORD,
 			user,
@@ -74,7 +74,7 @@ export class TokenService {
 		})
 	}
 
-	async generateAccountDeactivationToken(user: SessionUser) {
+	public async generateAccountDeactivationToken(user: SessionUser) {
 		return this._generateToken({
 			type: TokenType.DEACTIVATE_ACCOUNT,
 			user,

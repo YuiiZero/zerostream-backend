@@ -16,7 +16,7 @@ import { SessionService } from './session.service'
 
 @Resolver()
 export class SessionResolver {
-	constructor(private readonly sessionService: SessionService) {}
+	public constructor(private readonly sessionService: SessionService) {}
 
 	@Authorization()
 	@Query(() => SessionModel)
@@ -35,7 +35,9 @@ export class SessionResolver {
 
 	@Authorization()
 	@Query(() => SessionMetadataModel)
-	public getSessionMetadata(@SessionMetadata() metadata: SessionMetadataType) {
+	public getSessionMetadata(
+		@SessionMetadata() metadata: SessionMetadataType
+	): SessionMetadataType {
 		return metadata
 	}
 
@@ -44,7 +46,7 @@ export class SessionResolver {
 	public async revokeSession(
 		@Args('sessionID') sessID: string,
 		@Context() { req }: Ctx
-	) {
+	): Promise<boolean> {
 		await this.sessionService.deleteSession(req, sessID)
 		return true
 	}

@@ -2,6 +2,12 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input ChangePasswordInput {
+  newPassword: String!
+  password: String!
+  pincode: String!
+}
+
 type ClientModel {
   engineVersion: String
   name: String!
@@ -45,12 +51,10 @@ A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date
 scalar DateTime
 
 input DeactivateAccountInput {
-  password: String!
-  pincode: String
   token: String!
 }
 
-type DeactivatedModel {
+type DeactivatedUserModel {
   deactivatedAt: DateTime
   isDeactivated: Boolean!
 }
@@ -123,7 +127,8 @@ type MessageModel {
 }
 
 type Mutation {
-  deactivateAccount(deactivateAccountInput: DeactivateAccountInput!): DeactivatedModel!
+  changePassword(changePasswordInput: ChangePasswordInput!): Boolean!
+  deactivateAccount(deactivateAccountInput: DeactivateAccountInput!): DeactivatedUserModel!
   deleteSession(sessionID: String!): Boolean!
   disableTOTP(disableTotpInput: TOTPInput!): Boolean!
   enableTOTP(enableTotpInput: TOTPInput!): Boolean!
@@ -131,13 +136,16 @@ type Mutation {
   login(loginCredentials: LoginInput!): Boolean!
   logout: Boolean!
   register(registerCredentials: RegisterInput!): MessageModel!
-  resetPasswordAuthorized(resetPasswordInput: ResetPasswordInput!): PublicUserModel!
-  resetPasswordUnauthorized(resetPasswordInput: ResetPasswordInput!): PublicUserModel!
+  resetPassword(resetPasswordInput: ResetPasswordInput!): Boolean!
   revokeSession(sessionID: String!): Boolean!
   sendAccountDeactivationEmail: Boolean!
+  sendAccountDeactivationToken(sendAccountDeactivationTokenInput: SendAccountDeactivationTokenInputInput!): Boolean!
   sendAccountDeletionEmail(to: String!): Boolean!
   sendEmailVerificationEmail(to: String!): Boolean!
   sendPasswordRecoveryEmail(to: String!): Boolean!
+  sendResetPasswordTokenAuthorized(sendResetPasswordTokenAuthorizedInput: SendResetPasswordTokenAuthorizedInput!): Boolean!
+  sendResetPasswordTokenUnauthorized(sendResetPasswordTokenUnauthorizedInput: SendResetPasswordTokenUnauthorizedInput!): Boolean!
+  sendVerifyEmailToken(sendVerifyEmailTokenInput: SendVerifyEmailTokenInput!): Boolean!
   verifyEmail(verifyEmailInput: VerifyEmailInput!): Boolean!
 }
 
@@ -155,14 +163,6 @@ type PrivateUserModel {
   id: String!
   isEmailVerified: Boolean!
   isTotpEnabled: Boolean!
-  isVerified: Boolean!
-  nickname: String
-  username: String!
-}
-
-type PublicUserModel {
-  avatar: String
-  bio: String
   isVerified: Boolean!
   nickname: String
   username: String!
@@ -187,7 +187,25 @@ input RegisterInput {
 input ResetPasswordInput {
   newPassword: String!
   passwordRepeat: String!
-  recoveryToken: String!
+  token: String!
+}
+
+input SendAccountDeactivationTokenInputInput {
+  password: String!
+  pincode: String
+}
+
+input SendResetPasswordTokenAuthorizedInput {
+  pincode: String
+}
+
+input SendResetPasswordTokenUnauthorizedInput {
+  pincode: String
+  userEmail: String!
+}
+
+input SendVerifyEmailTokenInput {
+  email: String!
 }
 
 type SessionMetadataModel {

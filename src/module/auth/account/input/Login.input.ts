@@ -6,20 +6,20 @@ export class LoginInput {
 	@Field({ nullable: true })
 	@IsEmail()
 	@IsOptional()
-	email?: string
+	public email?: string
 
 	@Field({ nullable: true })
 	@IsString()
 	@IsOptional()
-	username?: string
+	public username?: string
 
 	@Field()
 	@IsString()
-	password!: string
+	public password!: string
 
 	@Field({ nullable: true })
 	@IsOptional()
 	@IsString()
 	@Length(6, 6)
-	pincode?: string
+	public pincode?: string
 }

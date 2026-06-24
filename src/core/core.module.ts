@@ -4,8 +4,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config'
 import { GraphQLModule } from '@nestjs/graphql'
 import { ScheduleModule } from '@nestjs/schedule'
 
-import { DeactivateResolver } from '../module/account/deactivate/deactivate.resolver'
-import { DeactivateService } from '../module/account/deactivate/deactivate.service'
+import { DeactivateAccountResolver } from '../module/account/deactivate/deactivate-account.resolver'
+import { DeactivateAccountService } from '../module/account/deactivate/deactivate-account.service'
 import { RecoveryResolver } from '../module/account/recovery/recovery.resolver'
 import { RecoveryService } from '../module/account/recovery/recovery.service'
 import { VerifyResolver } from '../module/account/verify/verify.resolver'
@@ -20,6 +20,8 @@ import { CronModule } from '../module/cron/cron.module'
 import { CronService } from '../module/cron/cron.service'
 import { MailModule } from '../module/mail/mail.module'
 import { MailResolver } from '../module/mail/mail.resolver'
+import { CredentialsModule } from '../module/service/credentials/credentials.module'
+import { CredentialsService } from '../module/service/credentials/credentials.service'
 import { TokenModule } from '../module/service/token/token.module'
 import { TokenService } from '../module/service/token/token.service'
 import { UserModule } from '../module/service/user/user.module'
@@ -48,7 +50,8 @@ import { RedisModule } from './module/redis/redis.module'
 		TokenModule,
 		UserModule,
 		ScheduleModule.forRoot(),
-		CronModule
+		CronModule,
+		CredentialsModule
 	],
 	providers: [
 		AccountResolver,
@@ -62,11 +65,12 @@ import { RedisModule } from './module/redis/redis.module'
 		RecoveryService,
 		TotpResolver,
 		TotpService,
-		DeactivateResolver,
-		DeactivateService,
+		DeactivateAccountResolver,
+		DeactivateAccountService,
 		TokenService,
 		UserService,
-		CronService
+		CronService,
+		CredentialsService
 	]
 })
 export class CoreModule {}

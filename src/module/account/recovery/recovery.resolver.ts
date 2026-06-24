@@ -1,52 +1,65 @@
+import { ConfigService } from '@nestjs/config'
 import { Args, Context, Mutation, Resolver } from '@nestjs/graphql'
 
 import { Authorization } from '../../../shared/decorator/authorization.decorator'
+import { CurrentUserId } from '../../../shared/decorator/current-user-id.decorator'
+import { Ip } from '../../../shared/decorator/ip.decorator'
 import { Unauthorized } from '../../../shared/decorator/unauthorized.decorator'
-import { PublicUserModel } from '../../../shared/model/user.model'
+import { UserAgent } from '../../../shared/decorator/user-agent.decorator'
 import { Ctx } from '../../../shared/types/type'
-import { SessionService } from '../../auth/session/session.service'
+import { getSessionMetadata } from '../../../shared/util/getSessionMetadata'
 
-import { ResetPasswordInput } from './input/reset-password.input'
+import {
+	ResetPasswordInput,
+	SendResetPasswordTokenAuthorizedInput,
+	SendResetPasswordTokenUnauthorizedInput
+} from './input/recovery.input'
 import { RecoveryService } from './recovery.service'
 
 @Resolver()
 export class RecoveryResolver {
-	constructor(
+	public constructor(
 		private readonly recoveryService: RecoveryService,
-		private readonly sessionService: SessionService
+		private readonly configService: ConfigService
 	) {}
 
-	@Unauthorized()
-	@Mutation(() => PublicUserModel)
-	async resetPasswordUnauthorized(
-		@Context() { req }: Ctx,
-		@Args('resetPasswordInput')
-		{ newPassword, recoveryToken }: ResetPasswordInput
-	) {
-		const user = await this.recoveryService.resetPassword({
-			newPassword,
-			recoveryToken
-		})
+	@Authorization()
+	@Mutation(() => Boolean)
+	public async sendResetPasswordTokenAuthorized(
+		@UserAgent() userAgent: string,
+		@Ip() ip: string,
+		@CurrentUserId() userId: string,
+		@Args('sendResetPasswordTokenAuthorizedInput')
+		input: SendResetPasswordTokenAuthorizedInput
+	): Promise<boolean> {
+		const metadata = await getSessionMetadata(this.configService, userAgent, ip)
+		await this.recoveryService.sendResetPasswordToken(metadata, userId, input)
 
-		await this.sessionService.deleteAllSessions(req, user.email)
-
-		return user
+		return true
 	}
 
-	@Authorization()
-	@Mutation(() => PublicUserModel)
-	async resetPasswordAuthorized(
-		@Context() { req }: Ctx,
-		@Args('resetPasswordInput')
-		{ newPassword, recoveryToken }: ResetPasswordInput
-	) {
-		const user = await this.recoveryService.resetPassword({
-			newPassword,
-			recoveryToken
-		})
+	@Unauthorized()
+	@Mutation(() => Boolean)
+	public async sendResetPasswordTokenUnauthorized(
+		@UserAgent() userAgent: string,
+		@Ip() ip: string,
+		@Args('sendResetPasswordTokenUnauthorizedInput')
+		input: SendResetPasswordTokenUnauthorizedInput
+	): Promise<boolean> {
+		const metadata = await getSessionMetadata(this.configService, userAgent, ip)
 
-		await this.sessionService.deleteAllSessionsExceptCurrent(req, user)
+		await this.recoveryService.sendResetPasswordToken(metadata, input)
 
-		return user
+		return true
+	}
+
+	@Mutation(() => Boolean)
+	public async resetPassword(
+		@Args('resetPasswordInput') input: ResetPasswordInput,
+		@Context() { req }: Ctx
+	): Promise<boolean> {
+		await this.recoveryService.resetPassword(input, req.sessionID)
+
+		return true
 	}
 }

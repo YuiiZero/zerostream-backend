@@ -16,7 +16,7 @@ async function bootstrap() {
 
 	app.use(
 		cookieParser(config.getOrThrow<string>('SESSION_SECRET')),
-		session(getSessionConfig(config, redis.getStore()))
+		session(getSessionConfig(config, redis.store))
 	)
 
 	app.useGlobalPipes(new ValidationPipe())

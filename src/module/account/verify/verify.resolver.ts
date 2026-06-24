@@ -1,26 +1,29 @@
-import { Args, Context, Mutation, Resolver } from '@nestjs/graphql'
+import { Args, Mutation, Resolver } from '@nestjs/graphql'
 
-import { Ctx } from '../../../shared/types/type'
-import { SessionService } from '../../auth/session/session.service'
-
-import { VerifyEmailInput } from './input/verify-email.input'
+import {
+	SendVerifyEmailTokenInput,
+	VerifyEmailInput
+} from './input/verify-email.input'
 import { VerifyService } from './verify.service'
 
 @Resolver()
 export class VerifyResolver {
-	constructor(
-		private readonly verifyService: VerifyService,
-		private readonly sessionService: SessionService
-	) {}
+	public constructor(private readonly verifyService: VerifyService) {}
 
 	@Mutation(() => Boolean)
-	async verifyEmail(
-		@Context() { req }: Ctx,
-		@Args('verifyEmailInput') { token }: VerifyEmailInput
+	public async sendVerifyEmailToken(
+		@Args('sendVerifyEmailTokenInput') input: SendVerifyEmailTokenInput
 	): Promise<boolean> {
-		const user = await this.verifyService.verifyEmail(token)
+		await this.verifyService.sendVerifyEmailToken(input)
 
-		await this.sessionService.saveCurrentSession(req, user)
+		return true
+	}
+
+	@Mutation(() => Boolean)
+	public async verifyEmail(
+		@Args('verifyEmailInput') input: VerifyEmailInput
+	): Promise<boolean> {
+		await this.verifyService.verifyEmail(input)
 
 		return true
 	}

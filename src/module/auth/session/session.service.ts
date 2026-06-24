@@ -21,19 +21,19 @@ import { toSessionModel } from '../../../shared/util/toSessionModel.util'
 
 @Injectable()
 export class SessionService {
-	sessionCookieName: string
-	redisClient: RedisClientType
+	private readonly sessionCookieName: string
+	private readonly redisClient: RedisClientType
 
-	constructor(
+	public constructor(
 		private readonly configService: ConfigService,
 		private readonly prismaService: PrismaService,
 		private readonly redisService: RedisService
 	) {
 		this.sessionCookieName = configService.getOrThrow<string>('SESSION_NAME')
-		this.redisClient = redisService.getClient()
+		this.redisClient = redisService.client
 	}
 
-	async getAllUserSessions(userId: string) {
+	public async getAllUserSessions(userId: string): Promise<SessionModel[]> {
 		const found = await this.prismaService.user.findFirst({
 			where: { id: userId },
 			select: { sessionIDs: true }
@@ -63,7 +63,10 @@ export class SessionService {
 		return models
 	}
 
-	async saveCurrentSession(req: Request, publicUser: PublicUserModel) {
+	public async saveCurrentSession(
+		req: Request,
+		publicUser: PublicUserModel
+	): Promise<void> {
 		const userAgent = req.headers[HttpHeader.USER_AGENT]
 		const ip = req.ip
 
@@ -82,7 +85,10 @@ export class SessionService {
 		)
 	}
 
-	async deleteCurrentSession(req: Request, res: Response): Promise<void> {
+	public async deleteCurrentSession(
+		req: Request,
+		res: Response
+	): Promise<void> {
 		const session = req.session
 
 		await this._deleteSession(req.sessionID)
@@ -104,23 +110,24 @@ export class SessionService {
 		})
 	}
 
-	async deleteSession(req: Request, sessionID: string) {
+	public async deleteSession(req: Request, sessionID: string): Promise<void> {
 		if (req.sessionID === sessionID)
 			throw new BadRequestException('Use logout to delete current session')
 		await this._deleteSession(sessionID)
 	}
 
-	async deleteAllSessions(req: Request, email: string) {
+	public async deleteAllSessions(userId: string): Promise<void> {
 		const found = await this.prismaService.user.findUnique({
-			where: { email },
-			select: { sessionIDs: true }
+			where: { id: userId },
+			select: {
+				sessionIDs: true,
+				email: true
+			}
 		})
 
-		if (!found)
-			throw new NotFoundException(
-				`Cannot delete sessions: wrong user email ${email}`
-			)
+		if (!found) throw new NotFoundException('Wrong user id')
 
+		const { email } = found
 		const { sessionIDs } = found
 
 		if (sessionIDs.length === 0) return
@@ -136,8 +143,10 @@ export class SessionService {
 		})
 	}
 
-	async deleteAllSessionsExceptCurrent(req: Request, { id }: SessionUser) {
-		const currentSessionID = req.sessionID
+	async deleteAllSessionsExceptCurrent(
+		currentSessionID: string,
+		{ id }: SessionUser
+	): Promise<void> {
 		const found = await this.prismaService.user.findFirst({
 			where: { id },
 			select: { sessionIDs: true }
@@ -186,7 +195,7 @@ export class SessionService {
 		return updated
 	}
 
-	private async _deleteSession(sessionID: string) {
+	private async _deleteSession(sessionID: string): Promise<void> {
 		const user = await this.prismaService.user.findFirst({
 			where: {
 				sessionIDs: {

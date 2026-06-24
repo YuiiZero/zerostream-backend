@@ -5,10 +5,10 @@ import { createClient, RedisClientType } from 'redis'
 
 @Injectable()
 export class RedisService {
-	client: RedisClientType
-	store?: RedisStore
+	public readonly client: RedisClientType
+	public readonly store: RedisStore
 
-	constructor(private configService: ConfigService) {
+	public constructor(private readonly configService: ConfigService) {
 		this.client = createClient({
 			socket: {
 				host: configService.getOrThrow('REDIS_HOST'),
@@ -21,22 +21,10 @@ export class RedisService {
 		this.client.on('error', e => {
 			console.error(e)
 		})
-	}
-
-	getClient() {
-		return this.client
-	}
-
-	getStore() {
-		if (this.store) {
-			return this.store
-		}
 
 		this.store = new RedisStore({
 			client: this.client,
 			prefix: this.configService.getOrThrow<string>('REDIS_PREFIX')
 		})
-
-		return this.store
 	}
 }

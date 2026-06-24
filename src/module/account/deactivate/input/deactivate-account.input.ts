@@ -1,18 +1,11 @@
 import { Field, InputType } from '@nestjs/graphql'
-import { IsOptional, IsString, Length } from 'class-validator'
+import { IsString } from 'class-validator'
+
+import { DeactivateAccountInputInterface } from '../interface/deactivate.interface'
 
 @InputType()
-export class DeactivateAccountInput {
-	@Field()
-	@Length(6, 6, { message: 'Code must be 6 digits long' })
-	token!: string
-
+export class DeactivateAccountInput implements DeactivateAccountInputInterface {
 	@Field()
 	@IsString()
-	password!: string
-
-	@Field(() => String, { nullable: true })
-	@IsString()
-	@IsOptional()
-	pincode!: string | null
+	public token!: string
 }

@@ -1,9 +1,21 @@
 import { Field, InputType } from '@nestjs/graphql'
-import { IsUUID } from 'class-validator'
+import { IsEmail, IsUUID } from 'class-validator'
+
+import {
+	SendVerifyEmailTokenInputInterface,
+	VerifyEmailInputInterface
+} from '../interface/verify.interface'
 
 @InputType()
-export class VerifyEmailInput {
+export class VerifyEmailInput implements VerifyEmailInputInterface {
 	@Field()
 	@IsUUID('4')
-	token!: string
+	public token!: string
+}
+
+@InputType()
+export class SendVerifyEmailTokenInput implements SendVerifyEmailTokenInputInterface {
+	@Field()
+	@IsEmail()
+	public email!: string
 }
