@@ -2,12 +2,6 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-input ChangePasswordInput {
-  newPassword: String!
-  password: String!
-  pincode: String!
-}
-
 type ClientModel {
   engineVersion: String
   name: String!
@@ -122,20 +116,15 @@ input LoginInput {
   username: String
 }
 
-type MessageModel {
-  message: String!
-}
-
 type Mutation {
-  changePassword(changePasswordInput: ChangePasswordInput!): Boolean!
   deactivateAccount(deactivateAccountInput: DeactivateAccountInput!): DeactivatedUserModel!
   deleteSession(sessionID: String!): Boolean!
   disableTOTP(disableTotpInput: TOTPInput!): Boolean!
   enableTOTP(enableTotpInput: TOTPInput!): Boolean!
   generateTOTPSecret: GenerateTOTPModel!
-  login(loginCredentials: LoginInput!): Boolean!
+  login(loginInput: LoginInput!): Boolean!
   logout: Boolean!
-  register(registerCredentials: RegisterInput!): MessageModel!
+  register(registerInput: RegisterInput!): RegisterMessageModel!
   resetPassword(resetPasswordInput: ResetPasswordInput!): Boolean!
   revokeSession(sessionID: String!): Boolean!
   sendAccountDeactivationEmail: Boolean!
@@ -182,6 +171,10 @@ input RegisterInput {
   nickname: String
   password: String!
   username: String!
+}
+
+type RegisterMessageModel {
+  message: String!
 }
 
 input ResetPasswordInput {

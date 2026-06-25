@@ -4,9 +4,9 @@ import { ConfigService } from '@nestjs/config'
 import { TokenType } from '../../../../prisma/generated/prisma/enums'
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
 import { handleException } from '../../../shared/util/handleException.util'
+import { TokenService } from '../../global/token/token.service'
+import { UserService } from '../../global/user/user.service'
 import { MailService } from '../../mail/mail.service'
-import { TokenService } from '../../service/token/token.service'
-import { UserService } from '../../service/user/user.service'
 
 import { VerifyEmailInput } from './input/verify-email.input'
 import {

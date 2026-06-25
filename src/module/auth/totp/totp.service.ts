@@ -103,7 +103,7 @@ export class TotpService {
 	}
 
 	public verifyTOTP(
-		pincode: string | null,
+		pincode: string | undefined,
 		totpSecret: string | null
 	): boolean {
 		if (!totpSecret)

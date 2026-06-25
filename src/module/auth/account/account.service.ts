@@ -1,92 +1,83 @@
 import {
-	BadRequestException,
 	ConflictException,
-	ForbiddenException,
 	Injectable,
-	InternalServerErrorException,
 	UnauthorizedException
 } from '@nestjs/common'
 import { hash, verify } from 'argon2'
-import { TOTP } from 'otpauth'
 
 import { User } from '../../../../prisma/generated/prisma/client'
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
-import { PublicUserModel } from '../../../shared/model/user.model'
-import { TokenService } from '../../service/token/token.service'
-import { UserService } from '../../service/user/user.service'
+import { PrivateUserModel } from '../../../shared/model/user.model'
+import { handleException } from '../../../shared/util/handleException.util'
+import { VerifyService } from '../../account/verify/verify.service'
+import { UserService } from '../../global/user/user.service'
+import { SessionService } from '../session/session.service'
+import { TotpService } from '../totp/totp.service'
 
-import { ChangePasswordInput } from './input/ChangePassword.input.ts'
 import { LoginInput } from './input/Login.input'
 import { RegisterInput } from './input/Register.input'
+import { AccountServiceInterface } from './interface/account.interface'
+import { RegisterMessageModel } from './model/RegisterUser.model'
 
 @Injectable()
-export class AccountService {
+export class AccountService implements AccountServiceInterface {
 	public constructor(
 		private readonly prismaService: PrismaService,
 		private readonly userService: UserService,
-		private readonly tokenService: TokenService
+		private readonly verifyService: VerifyService,
+		private readonly totpService: TotpService,
+		private readonly sessionService: SessionService
 	) {}
 
-	public async me(id: string): Promise<User> {
-		return this.userService.getUnique('id', id)
+	public me(userId: string): Promise<PrivateUserModel> {
+		return this.userService.getUnique('id', userId)
 	}
 
-	public async register(
-		userRegisterData: RegisterInput
-	): Promise<PublicUserModel> {
-		const { password } = userRegisterData
+	public async register(input: RegisterInput): Promise<RegisterMessageModel> {
+		try {
+			const { password, email } = input
 
-		await this._checkCredentialsUnique(userRegisterData)
+			await this._checkCredentialsUnique(input)
 
-		const user = await this.prismaService.user.create({
-			data: { ...userRegisterData, password: await hash(password) }
-		})
-		const { password: _, ...returned } = user
+			await this.prismaService.user.create({
+				data: { ...input, password: await hash(password) }
+			})
 
-		return returned
+			await this.verifyService.sendVerifyEmailToken({ email })
+
+			return { message: 'Verify your email to finish registration' }
+		} catch (error) {
+			handleException(error, 'Cannot register user')
+		}
 	}
 
-	public async login(userLoginData: LoginInput): Promise<PublicUserModel> {
-		const { password, pincode, email, username } = userLoginData
-		const found: User | null = email
-			? await this.prismaService.user.findUnique({ where: { email } })
-			: await this.prismaService.user.findUnique({ where: { username } })
+	public async getLoginUser(userLoginData: LoginInput): Promise<User> {
+		try {
+			const { password, pincode, email, username } = userLoginData
+			const found: User | null = email
+				? await this.prismaService.user.findUnique({ where: { email } })
+				: await this.prismaService.user.findUnique({ where: { username } })
 
-		if (!found) throw new UnauthorizedException('Invalid credentials')
+			if (!found) throw new UnauthorizedException('Invalid credentials')
 
-		const isPasswordVerified = await verify(found.password, password)
+			const isPasswordVerified = await verify(found.password, password)
 
-		if (!isPasswordVerified)
-			throw new UnauthorizedException('Invalid credentials')
-		if (!found.isEmailVerified)
-			throw new ForbiddenException('Email is not verified')
-		if (found.isTotpEnabled) this._checkPincode(found.totpSecret, pincode)
+			if (!isPasswordVerified)
+				throw new UnauthorizedException('Invalid credentials')
+			if (!found.isEmailVerified)
+				throw new UnauthorizedException('Email is not verified')
+			if (found.isTotpEnabled) {
+				const isTotpVerified = this.totpService.verifyTOTP(
+					pincode,
+					found.totpSecret
+				)
+				if (!isTotpVerified) throw new UnauthorizedException('Wrong pincode')
+			}
 
-		const { password: _, ...returned } = found
-
-		return returned
-	}
-
-	public async changePassword(
-		userId: string,
-		changePasswordInput: ChangePasswordInput
-	): Promise<boolean> {
-		const { password, isTotpEnabled, totpSecret } =
-			await this.userService.getUnique('id', userId)
-		const { password: oldPassword, newPassword, pincode } = changePasswordInput
-		const isPasswordVerified = await verify(password, oldPassword)
-
-		if (!isPasswordVerified) throw new BadRequestException('Wrong password')
-		if (isTotpEnabled) this._checkPincode(totpSecret, pincode)
-
-		const newPasswordHashed = await hash(newPassword)
-
-		await this.prismaService.user.update({
-			where: { id: userId },
-			data: { password: newPasswordHashed }
-		})
-
-		return true
+			return found
+		} catch (error) {
+			handleException(error, 'Cannot login')
+		}
 	}
 
 	private async _checkCredentialsUnique(credentials: {
@@ -104,19 +95,5 @@ export class AccountService {
 			throw new ConflictException('This email is taken')
 		if (found.username === username)
 			throw new ConflictException('This username is taken')
-	}
-
-	private _checkPincode(
-		totpSecret: string | null,
-		pincode: string | undefined
-	): void {
-		if (!pincode) throw new BadRequestException('Pincode not provided')
-		if (!totpSecret)
-			throw new InternalServerErrorException('TOTP secret is null')
-
-		const totp = new TOTP({ secret: totpSecret })
-		const delta = totp.validate({ token: pincode })
-
-		if (delta === null) throw new UnauthorizedException('Wrong pincode')
 	}
 }

@@ -9,8 +9,10 @@ import {
 	MinLength
 } from 'class-validator'
 
+import { RegisterInputInterface } from '../interface/account.interface'
+
 @InputType()
-export class RegisterInput {
+export class RegisterInput implements RegisterInputInterface {
 	@Field()
 	@IsEmail()
 	public email!: string

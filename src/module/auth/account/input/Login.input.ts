@@ -1,8 +1,10 @@
 import { Field, InputType } from '@nestjs/graphql'
 import { IsEmail, IsOptional, IsString, Length } from 'class-validator'
 
+import { LoginInputInterface } from '../interface/account.interface'
+
 @InputType()
-export class LoginInput {
+export class LoginInput implements LoginInputInterface {
 	@Field({ nullable: true })
 	@IsEmail()
 	@IsOptional()

@@ -9,9 +9,9 @@ import { SessionMetadata } from '../../../shared/types/metadata.type'
 import { handleException } from '../../../shared/util/handleException.util'
 import { SessionService } from '../../auth/session/session.service'
 import { TotpService } from '../../auth/totp/totp.service'
+import { TokenService } from '../../global/token/token.service'
+import { UserService } from '../../global/user/user.service'
 import { MailService } from '../../mail/mail.service'
-import { TokenService } from '../../service/token/token.service'
-import { UserService } from '../../service/user/user.service'
 
 import {
 	RecoveryServiceInterface,

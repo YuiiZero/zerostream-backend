@@ -3,8 +3,8 @@ import { Global, Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 
 import { getMailerConf } from '../../core/conf/getMailerConf'
-import { TokenModule } from '../service/token/token.module'
-import { TokenService } from '../service/token/token.service'
+import { TokenModule } from '../global/token/token.module'
+import { TokenService } from '../global/token/token.service'
 
 import { MailResolver } from './mail.resolver'
 import { MailService } from './mail.service'

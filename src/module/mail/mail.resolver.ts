@@ -6,8 +6,8 @@ import { Authorization } from '../../shared/decorator/authorization.decorator'
 import { CurrentUserId } from '../../shared/decorator/current-user-id.decorator'
 import { SessionMetadata } from '../../shared/decorator/session-metadata.decorator'
 import { SessionMetadata as SessionMetadataType } from '../../shared/types/metadata.type'
-import { TokenService } from '../service/token/token.service'
-import { UserService } from '../service/user/user.service'
+import { TokenService } from '../global/token/token.service'
+import { UserService } from '../global/user/user.service'
 
 import { MailService } from './mail.service'
 

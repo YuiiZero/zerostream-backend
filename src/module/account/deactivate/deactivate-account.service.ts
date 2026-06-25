@@ -8,10 +8,10 @@ import { SessionMetadata } from '../../../shared/types/metadata.type'
 import { Ctx } from '../../../shared/types/type'
 import { handleException } from '../../../shared/util/handleException.util'
 import { SessionService } from '../../auth/session/session.service'
+import { CredentialsService } from '../../global/credentials/credentials.service'
+import { TokenService } from '../../global/token/token.service'
+import { UserService } from '../../global/user/user.service'
 import { MailService } from '../../mail/mail.service'
-import { CredentialsService } from '../../service/credentials/credentials.service'
-import { TokenService } from '../../service/token/token.service'
-import { UserService } from '../../service/user/user.service'
 
 import {
 	DeactivateAccountInputInterface,
