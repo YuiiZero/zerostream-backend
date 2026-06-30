@@ -14,10 +14,12 @@ import { UserService } from '../../global/user/user.service'
 import { MailService } from '../../mail/mail.service'
 
 import {
+	SendResetPasswordTokenAuthorizedInput,
+	SendResetPasswordTokenUnauthorizedInput
+} from './input/recovery.input'
+import {
 	RecoveryServiceInterface,
-	ResetPasswordInputInterface,
-	SendResetPasswordTokenAuthorizedInputInterface,
-	SendResetPasswordTokenUnauthorizedInputInterface
+	ResetPasswordInputInterface
 } from './interface/recovery.interface'
 
 @Injectable()
@@ -39,16 +41,16 @@ export class RecoveryService implements RecoveryServiceInterface {
 	public async sendResetPasswordToken(
 		metadata: SessionMetadata,
 		userId: string,
-		input: SendResetPasswordTokenAuthorizedInputInterface
+		input: SendResetPasswordTokenAuthorizedInput
 	): Promise<void>
 	public async sendResetPasswordToken(
 		metadata: SessionMetadata,
-		input: SendResetPasswordTokenUnauthorizedInputInterface
+		input: SendResetPasswordTokenUnauthorizedInput
 	): Promise<void>
 	public async sendResetPasswordToken(
 		metadata: SessionMetadata,
-		userIdOrInput: string | SendResetPasswordTokenUnauthorizedInputInterface,
-		input?: SendResetPasswordTokenAuthorizedInputInterface
+		userIdOrInput: string | SendResetPasswordTokenUnauthorizedInput,
+		input?: SendResetPasswordTokenAuthorizedInput
 	): Promise<void> {
 		try {
 			let user: User
@@ -94,7 +96,7 @@ export class RecoveryService implements RecoveryServiceInterface {
 
 	public async resetPassword(
 		input: ResetPasswordInputInterface,
-		sessionID?: string
+		sessionId?: string
 	): Promise<void> {
 		try {
 			const { token, newPassword } = input
@@ -111,13 +113,8 @@ export class RecoveryService implements RecoveryServiceInterface {
 				}
 			})
 
-			if (sessionID) {
-				const user = await this.userService.getUnique('id', userId)
-
-				await this.sessionService.deleteAllSessionsExceptCurrent(
-					sessionID,
-					user
-				)
+			if (sessionId) {
+				await this.sessionService.deleteAllSessions(userId, sessionId)
 			} else {
 				await this.sessionService.deleteAllSessions(userId)
 			}

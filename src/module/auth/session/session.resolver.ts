@@ -3,12 +3,7 @@ import { SessionData } from 'express-session'
 
 import { Authorization } from '../../../shared/decorator/authorization.decorator'
 import { CurrentUserId } from '../../../shared/decorator/current-user-id.decorator'
-import { SessionMetadata } from '../../../shared/decorator/session-metadata.decorator'
-import {
-	SessionMetadataModel,
-	SessionModel
-} from '../../../shared/model/session.model'
-import { SessionMetadata as SessionMetadataType } from '../../../shared/types/metadata.type'
+import { SessionModel } from '../../../shared/model/session.model'
 import { Ctx } from '../../../shared/types/type'
 import { toSessionModel } from '../../../shared/util/toSessionModel.util'
 
@@ -22,32 +17,28 @@ export class SessionResolver {
 	@Query(() => SessionModel)
 	public getCurrentSession(@Context() { req }: Ctx): SessionModel {
 		const sessionData = req.session as SessionData
+
 		return toSessionModel(sessionData)
 	}
 
 	@Authorization()
 	@Query(() => [SessionModel])
-	public getAllCurrentUserSessions(
+	public async getUserSessions(
 		@CurrentUserId() userId: string
 	): Promise<SessionModel[]> {
-		return this.sessionService.getAllUserSessions(userId)
-	}
+		const sessionData = await this.sessionService.getSessions(userId)
 
-	@Authorization()
-	@Query(() => SessionMetadataModel)
-	public getSessionMetadata(
-		@SessionMetadata() metadata: SessionMetadataType
-	): SessionMetadataType {
-		return metadata
+		return sessionData.map(sData => toSessionModel(sData))
 	}
 
 	@Authorization()
 	@Mutation(() => Boolean)
-	public async revokeSession(
-		@Args('sessionID') sessID: string,
-		@Context() { req }: Ctx
+	public async deleteSession(
+		@Args('sessionId') sessionId: string,
+		@Context() context: Ctx
 	): Promise<boolean> {
-		await this.sessionService.deleteSession(req, sessID)
+		await this.sessionService.deleteSession(sessionId, context)
+
 		return true
 	}
 }

@@ -13,11 +13,10 @@ import { TokenService } from '../../global/token/token.service'
 import { UserService } from '../../global/user/user.service'
 import { MailService } from '../../mail/mail.service'
 
+import { CredentialsInput } from './input/Credentials.input'
 import {
-	DeactivateAccountInputInterface,
 	DeactivateAccountServiceInterface,
-	DeactivatedUserModelInterface,
-	SendAccountDeactivationTokenInputInterface
+	DeactivatedUserModelInterface
 } from './interface/deactivate.interface'
 
 @Injectable()
@@ -41,7 +40,7 @@ export class DeactivateAccountService implements DeactivateAccountServiceInterfa
 	public async sendAccountDeactivationToken(
 		userId: string,
 		metadata: SessionMetadata,
-		input: SendAccountDeactivationTokenInputInterface
+		credentials: CredentialsInput
 	): Promise<void> {
 		try {
 			const user = await this.userService.getUnique('id', userId)
@@ -49,7 +48,7 @@ export class DeactivateAccountService implements DeactivateAccountServiceInterfa
 			if (user.isDeactivated)
 				throw new BadRequestException('User is already deactivated')
 
-			await this.credentialsService.validateCredentials(userId, input)
+			await this.credentialsService.validateCredentials(userId, credentials)
 
 			const sessionUser = await this.userService.toSessionUser(user)
 			const tokenObject =
@@ -67,16 +66,16 @@ export class DeactivateAccountService implements DeactivateAccountServiceInterfa
 	}
 
 	public async deactivateAccount(
-		input: DeactivateAccountInputInterface,
+		token: string,
 		context: Ctx
 	): Promise<DeactivatedUserModelInterface> {
 		try {
 			const { userId } = await this.tokenService.verifyToken({
-				token: input.token,
+				token,
 				tokenType: TokenType.DEACTIVATE_ACCOUNT
 			})
 
-			await this.sessionService.deleteCurrentSession(context.req, context.res)
+			await this.sessionService.deleteSession(context.req.sessionID)
 
 			return this.prismaService.user.update({
 				where: { id: userId },

@@ -7,8 +7,8 @@ import { SessionMetadata as SessionMetadataType } from '../../../shared/types/me
 import { Ctx } from '../../../shared/types/type'
 
 import { DeactivateAccountService } from './deactivate-account.service'
-import { DeactivateAccountInput } from './input/deactivate-account.input'
-import { SendAccountDeactivationTokenInputInput } from './input/send-account-deactivation-token.input'
+import { CredentialsInput } from './input/Credentials.input'
+import { TokenInput } from './input/Token.input'
 import { DeactivatedUserModelInterface } from './interface/deactivate.interface'
 import { DeactivatedUserModel } from './model/deactivated-user.model'
 
@@ -24,7 +24,7 @@ export class DeactivateAccountResolver {
 		@CurrentUserId() userId: string,
 		@SessionMetadata() metadata: SessionMetadataType,
 		@Args('sendAccountDeactivationTokenInput')
-		input: SendAccountDeactivationTokenInputInput
+		input: CredentialsInput
 	): Promise<boolean> {
 		await this.deactivateAccountService.sendAccountDeactivationToken(
 			userId,
@@ -38,11 +38,12 @@ export class DeactivateAccountResolver {
 	@Mutation(() => DeactivatedUserModel)
 	public async deactivateAccount(
 		@Args('deactivateAccountInput')
-		input: DeactivateAccountInput,
+		input: TokenInput,
 		@Context() context: Ctx
 	): Promise<DeactivatedUserModelInterface> {
+		const { token } = input
 		const deactivatedUser =
-			await this.deactivateAccountService.deactivateAccount(input, context)
+			await this.deactivateAccountService.deactivateAccount(token, context)
 
 		return deactivatedUser
 	}

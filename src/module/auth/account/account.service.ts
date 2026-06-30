@@ -11,7 +11,6 @@ import { PrivateUserModel } from '../../../shared/model/user.model'
 import { handleException } from '../../../shared/util/handleException.util'
 import { VerifyService } from '../../account/verify/verify.service'
 import { UserService } from '../../global/user/user.service'
-import { SessionService } from '../session/session.service'
 import { TotpService } from '../totp/totp.service'
 
 import { LoginInput } from './input/Login.input'
@@ -25,8 +24,7 @@ export class AccountService implements AccountServiceInterface {
 		private readonly prismaService: PrismaService,
 		private readonly userService: UserService,
 		private readonly verifyService: VerifyService,
-		private readonly totpService: TotpService,
-		private readonly sessionService: SessionService
+		private readonly totpService: TotpService
 	) {}
 
 	public me(userId: string): Promise<PrivateUserModel> {

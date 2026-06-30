@@ -38,15 +38,15 @@ export class AccountResolver {
 		loginInput: LoginInput
 	): Promise<boolean> {
 		const user = await this.accountService.getLoginUser(loginInput)
-		await this.sessionService.saveCurrentSession(req, user)
+		await this.sessionService.createSession(user.id, req)
 
 		return true
 	}
 
 	@Authorization()
 	@Mutation(() => Boolean)
-	public async logout(@Context() { req, res }: Ctx): Promise<boolean> {
-		await this.sessionService.deleteCurrentSession(req, res)
+	public async logout(@Context() { req }: Ctx): Promise<boolean> {
+		await this.sessionService.deleteSession(req.sessionID)
 
 		return true
 	}
@@ -54,10 +54,10 @@ export class AccountResolver {
 	@Authorization()
 	@Mutation(() => Boolean)
 	public async deleteSession(
-		@Context() { req }: Ctx,
-		@Args('sessionID') sessionID: string
+		@Context() context: Ctx,
+		@Args('sessionId') sessionId: string
 	): Promise<boolean> {
-		await this.sessionService.deleteSession(req, sessionID)
+		await this.sessionService.deleteSession(sessionId, context)
 
 		return true
 	}

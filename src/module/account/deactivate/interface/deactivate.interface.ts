@@ -6,27 +6,18 @@ export interface DeactivateAccountServiceInterface {
 	sendAccountDeactivationToken(
 		userId: string,
 		metadata: SessionMetadata,
-		input: SendAccountDeactivationTokenInputInterface
+		credentials: CredentialsInputInterface
 	): Promise<void>
 
 	deactivateAccount(
-		input: DeactivateAccountInputInterface,
+		token: string,
 		context: Ctx
 	): Promise<DeactivatedUserModelInterface>
 }
 
-export interface SendAccountDeactivationTokenInputInterface {
+export interface CredentialsInputInterface {
 	password: string
 	pincode?: string
-}
-
-export interface DeactivateAccountInputInterface {
-	token: string
-}
-
-export interface DeactivateAccountOptions {
-	userId: string
-	deactivateInput: DeactivateAccountInputInterface
 }
 
 export type DeactivatedUserModelInterface = Pick<

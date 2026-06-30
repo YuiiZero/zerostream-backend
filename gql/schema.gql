@@ -31,6 +31,11 @@ type CookieModel {
   secure: Boolean
 }
 
+input CredentialsInput {
+  password: String!
+  pincode: String
+}
+
 type CurrencyModel {
   code: String!
   name: String!
@@ -43,10 +48,6 @@ type CurrencyModel {
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
 scalar DateTime
-
-input DeactivateAccountInput {
-  token: String!
-}
 
 type DeactivatedUserModel {
   deactivatedAt: DateTime
@@ -117,8 +118,8 @@ input LoginInput {
 }
 
 type Mutation {
-  deactivateAccount(deactivateAccountInput: DeactivateAccountInput!): DeactivatedUserModel!
-  deleteSession(sessionID: String!): Boolean!
+  deactivateAccount(deactivateAccountInput: TokenInput!): DeactivatedUserModel!
+  deleteSession(sessionId: String!): Boolean!
   disableTOTP(disableTotpInput: TOTPInput!): Boolean!
   enableTOTP(enableTotpInput: TOTPInput!): Boolean!
   generateTOTPSecret: GenerateTOTPModel!
@@ -126,9 +127,8 @@ type Mutation {
   logout: Boolean!
   register(registerInput: RegisterInput!): RegisterMessageModel!
   resetPassword(resetPasswordInput: ResetPasswordInput!): Boolean!
-  revokeSession(sessionID: String!): Boolean!
   sendAccountDeactivationEmail: Boolean!
-  sendAccountDeactivationToken(sendAccountDeactivationTokenInput: SendAccountDeactivationTokenInputInput!): Boolean!
+  sendAccountDeactivationToken(sendAccountDeactivationTokenInput: CredentialsInput!): Boolean!
   sendAccountDeletionEmail(to: String!): Boolean!
   sendEmailVerificationEmail(to: String!): Boolean!
   sendPasswordRecoveryEmail(to: String!): Boolean!
@@ -158,9 +158,8 @@ type PrivateUserModel {
 }
 
 type Query {
-  getAllCurrentUserSessions: [SessionModel!]!
   getCurrentSession: SessionModel!
-  getSessionMetadata: SessionMetadataModel!
+  getUserSessions: [SessionModel!]!
   me: PrivateUserModel!
 }
 
@@ -181,11 +180,6 @@ input ResetPasswordInput {
   newPassword: String!
   passwordRepeat: String!
   token: String!
-}
-
-input SendAccountDeactivationTokenInputInput {
-  password: String!
-  pincode: String
 }
 
 input SendResetPasswordTokenAuthorizedInput {
@@ -228,6 +222,10 @@ type TimeZoneModel {
   gmt_offset: Int!
   id: String!
   is_daylight_saving: Boolean!
+}
+
+input TokenInput {
+  token: String!
 }
 
 input VerifyEmailInput {
