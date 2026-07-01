@@ -20,6 +20,8 @@ import { CronModule } from '../module/cron/cron.module'
 import { CronService } from '../module/cron/cron.service'
 import { CredentialsModule } from '../module/global/credentials/credentials.module'
 import { CredentialsService } from '../module/global/credentials/credentials.service'
+import { EncryptionModule } from '../module/global/encryption/encryption.module'
+import { EncryptionService } from '../module/global/encryption/encryption.service'
 import { TokenModule } from '../module/global/token/token.module'
 import { TokenService } from '../module/global/token/token.service'
 import { UserModule } from '../module/global/user/user.module'
@@ -51,7 +53,8 @@ import { RedisModule } from './module/redis/redis.module'
 		UserModule,
 		ScheduleModule.forRoot(),
 		CronModule,
-		CredentialsModule
+		CredentialsModule,
+		EncryptionModule
 	],
 	providers: [
 		AccountResolver,
@@ -70,7 +73,8 @@ import { RedisModule } from './module/redis/redis.module'
 		TokenService,
 		UserService,
 		CronService,
-		CredentialsService
+		CredentialsService,
+		EncryptionService
 	]
 })
 export class CoreModule {}
