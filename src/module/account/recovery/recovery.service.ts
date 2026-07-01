@@ -71,12 +71,12 @@ export class RecoveryService implements RecoveryServiceInterface {
 				throw new TypeError('Invalid arguments')
 			}
 
-			const { isTotpEnabled, totpSecret } = user
+			const { isTotpEnabled } = user
 
 			if (isTotpEnabled) {
 				if (!pincode) throw new UnauthorizedException('Pincode not provided')
 
-				const isTotpVerified = this.totpService.verifyTOTP(pincode, totpSecret)
+				const isTotpVerified = this.totpService.verifyTotp(user, pincode)
 				if (!isTotpVerified) throw new UnauthorizedException('Wrong pincode')
 			}
 

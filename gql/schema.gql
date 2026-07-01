@@ -2,6 +2,15 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+input AddTotpInput {
+  pincode: String!
+}
+
+type AddTotpOutputModel {
+  isTotpEnabled: Boolean!
+  recoveryCodes: [String!]
+}
+
 type ClientModel {
   engineVersion: String
   name: String!
@@ -118,14 +127,16 @@ input LoginInput {
 }
 
 type Mutation {
+  addTotp(addTotpInput: AddTotpInput!): AddTotpOutputModel!
   deactivateAccount(deactivateAccountInput: TokenInput!): DeactivatedUserModel!
   deleteSession(sessionId: String!): Boolean!
-  disableTOTP(disableTotpInput: TOTPInput!): Boolean!
-  enableTOTP(enableTotpInput: TOTPInput!): Boolean!
-  generateTOTPSecret: GenerateTOTPModel!
+  generateRecoveryCodes(pincode: String!): [String!]!
+  generateTotp: GenerateTOTPModel!
   login(loginInput: LoginInput!): Boolean!
   logout: Boolean!
   register(registerInput: RegisterInput!): RegisterMessageModel!
+  removeTotpByPincode(pincode: String!): Boolean!
+  removeTotpByRecoveryCode(recoveryCode: String!): Boolean!
   resetPassword(resetPasswordInput: ResetPasswordInput!): Boolean!
   sendAccountDeactivationEmail: Boolean!
   sendAccountDeactivationToken(sendAccountDeactivationTokenInput: CredentialsInput!): Boolean!
@@ -210,10 +221,6 @@ type SessionModel {
 
 type SessionUserModel {
   id: String!
-}
-
-input TOTPInput {
-  pincode: String!
 }
 
 type TimeZoneModel {

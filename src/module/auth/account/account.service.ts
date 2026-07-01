@@ -65,10 +65,10 @@ export class AccountService implements AccountServiceInterface {
 			if (!found.isEmailVerified)
 				throw new UnauthorizedException('Email is not verified')
 			if (found.isTotpEnabled) {
-				const isTotpVerified = this.totpService.verifyTOTP(
-					pincode,
-					found.totpSecret
-				)
+				if (!pincode) throw new UnauthorizedException('Pincode not provided')
+
+				const isTotpVerified = this.totpService.verifyTotp(found, pincode)
+
 				if (!isTotpVerified) throw new UnauthorizedException('Wrong pincode')
 			}
 

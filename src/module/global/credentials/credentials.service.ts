@@ -28,10 +28,7 @@ export class CredentialsService implements CredentialsServiceInterface {
 		if (user.isTotpEnabled) {
 			if (!pincode) throw new UnauthorizedException('Pincode not provided')
 
-			const isTotpVerified = this.totpService.verifyTOTP(
-				pincode,
-				user.totpSecret
-			)
+			const isTotpVerified = this.totpService.verifyTotp(user, pincode)
 
 			if (!isTotpVerified) throw new UnauthorizedException('Wrong pincode')
 		}

@@ -27,6 +27,8 @@ model User {
 
   isTotpEnabled Boolean @default(false) @map("is_totp_enabled")
   totpSecret String? @map("totp_secret")
+  totpPendingSecret String? @map("totp_pending_secret")
+  recoveryCodes String[] @map("recovery_codes")
 
   isDeactivated Boolean @default(false) @map("is_deactivated")
   deactivatedAt DateTime? @map("deactivated_at")
