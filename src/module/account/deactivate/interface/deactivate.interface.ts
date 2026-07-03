@@ -10,6 +10,7 @@ export interface DeactivateAccountServiceInterface {
 	): Promise<void>
 
 	deactivateAccount(
+		userId: string,
 		token: string,
 		context: Ctx
 	): Promise<DeactivatedUserModelInterface>

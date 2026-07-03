@@ -100,16 +100,16 @@ export class RecoveryService implements RecoveryServiceInterface {
 	): Promise<void> {
 		try {
 			const { token, newPassword } = input
-			const { userId } = await this.tokenService.verifyToken({
+			const { userId } = await this.tokenService.verifyUUIDToken(
 				token,
-				tokenType: TokenType.RESET_PASSWORD
-			})
-			const hashedPassword = await hash(newPassword)
+				TokenType.RESET_PASSWORD
+			)
+			const hashPassword = await hash(newPassword)
 
 			await this.prismaService.user.update({
 				where: { id: userId },
 				data: {
-					password: hashedPassword
+					hashPassword
 				}
 			})
 

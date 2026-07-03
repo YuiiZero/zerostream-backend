@@ -39,9 +39,8 @@ export class VerifyService implements VerifyServiceInterface {
 			if (isEmailVerified)
 				throw new BadRequestException('Email is already verified')
 
-			const tokenObject =
+			const { token } =
 				await this.tokenService.generateEmailVerificationToken(user)
-			const { token } = tokenObject
 
 			await this.mailService.sendEmailVerificationEmail({
 				to: email,
@@ -55,11 +54,10 @@ export class VerifyService implements VerifyServiceInterface {
 
 	public async verifyEmail(input: VerifyEmailInput): Promise<void> {
 		const { token } = input
-		const tokenObject = await this.tokenService.verifyToken({
+		const tokenObject = await this.tokenService.verifyUUIDToken(
 			token,
-			tokenType: TokenType.VERIFY_EMAIL
-		})
-
+			TokenType.VERIFY_EMAIL
+		)
 		const { userId: id } = tokenObject
 
 		await this.prismaService.user.update({

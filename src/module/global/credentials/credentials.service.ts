@@ -22,7 +22,7 @@ export class CredentialsService implements CredentialsServiceInterface {
 	): Promise<boolean> {
 		const { password: inputPassword, pincode } = input
 		const user = await this.userService.getUnique('id', userId)
-		const isPasswordValid = await verify(user.password, inputPassword)
+		const isPasswordValid = await verify(user.hashPassword, inputPassword)
 
 		if (!isPasswordValid) throw new UnauthorizedException('Invalid credentials')
 		if (user.isTotpEnabled) {

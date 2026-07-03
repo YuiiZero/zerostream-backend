@@ -7,5 +7,8 @@ export function handleException(e: unknown, message?: string): never {
 			400,
 			{ cause: e }
 		)
+
+	console.error(e)
+
 	throw new InternalServerErrorException(e)
 }

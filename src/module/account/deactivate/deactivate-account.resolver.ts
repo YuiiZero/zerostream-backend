@@ -8,7 +8,6 @@ import { Ctx } from '../../../shared/types/type'
 
 import { DeactivateAccountService } from './deactivate-account.service'
 import { CredentialsInput } from './input/Credentials.input'
-import { TokenInput } from './input/Token.input'
 import { DeactivatedUserModelInterface } from './interface/deactivate.interface'
 import { DeactivatedUserModel } from './model/deactivated-user.model'
 
@@ -36,14 +35,18 @@ export class DeactivateAccountResolver {
 	}
 
 	@Mutation(() => DeactivatedUserModel)
+	@Authorization()
 	public async deactivateAccount(
-		@Args('deactivateAccountInput')
-		input: TokenInput,
+		@CurrentUserId() userId: string,
+		@Args('token') token: string,
 		@Context() context: Ctx
 	): Promise<DeactivatedUserModelInterface> {
-		const { token } = input
 		const deactivatedUser =
-			await this.deactivateAccountService.deactivateAccount(token, context)
+			await this.deactivateAccountService.deactivateAccount(
+				userId,
+				token,
+				context
+			)
 
 		return deactivatedUser
 	}

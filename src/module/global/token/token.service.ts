@@ -4,20 +4,23 @@ import {
 	NotFoundException
 } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { hash } from 'argon2'
 import { randomUUID } from 'crypto'
 import ms, { StringValue } from 'ms'
 
 import { TokenType } from '../../../../prisma/generated/prisma/enums'
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
-import { Token } from '../../../shared/types/token.type'
+import { Token, TokenPair } from '../../../shared/types/token.type'
 import { SessionUser } from '../../../shared/types/user.type'
 import { generateCode } from '../../../shared/util/generateCode.util'
+import { hashSHA256 } from '../../../shared/util/hash-sha-256.util'
 
 @Injectable()
 export class TokenService {
 	private readonly VERIFICATION_TOKEN_TTL: StringValue
 	private readonly DEACTIVATION_TOKEN_TTL: StringValue
 	private readonly RECOVERY_TOKEN_TTL: StringValue
+	private readonly DEACTIVATION_TOKEN_LENGTH: number
 
 	public constructor(
 		private readonly prismaService: PrismaService,
@@ -31,12 +34,18 @@ export class TokenService {
 		)
 		this.RECOVERY_TOKEN_TTL =
 			configService.getOrThrow<StringValue>('RECOVERY_TOKEN_TTL')
+		this.DEACTIVATION_TOKEN_LENGTH = +configService.getOrThrow(
+			'DEACTIVATION_TOKEN_LENGTH'
+		)
 	}
 
-	public async verifyToken(options: VerifyTokenOptions): Promise<Token> {
-		const { token, tokenType } = options
+	public async verifyUUIDToken(
+		token: string,
+		tokenType: TokenType
+	): Promise<Token> {
+		const hashToken = hashSHA256(token)
 		const foundToken = await this.prismaService.token.findUnique({
-			where: { token, type: tokenType }
+			where: { hashToken, type: tokenType }
 		})
 
 		if (!foundToken) throw new NotFoundException('Token not found')
@@ -58,38 +67,54 @@ export class TokenService {
 		return relatedUser
 	}
 
-	public async generateEmailVerificationToken(user: SessionUser) {
-		return this._generateToken({
+	public generateEmailVerificationToken(user: SessionUser): Promise<TokenPair> {
+		return this._generateUUIDToken({
 			type: TokenType.VERIFY_EMAIL,
 			user,
 			ttl: this.VERIFICATION_TOKEN_TTL
 		})
 	}
 
-	public async generatePasswordRecoveryToken(user: SessionUser) {
-		return this._generateToken({
+	public generatePasswordRecoveryToken(user: SessionUser): Promise<TokenPair> {
+		return this._generateUUIDToken({
 			type: TokenType.RESET_PASSWORD,
 			user,
 			ttl: this.RECOVERY_TOKEN_TTL
 		})
 	}
 
-	public async generateAccountDeactivationToken(user: SessionUser) {
-		return this._generateToken({
-			type: TokenType.DEACTIVATE_ACCOUNT,
-			user,
-			isUUID: false,
-			ttl: this.DEACTIVATION_TOKEN_TTL
+	public async generateAccountDeactivationToken(sessionUser: SessionUser) {
+		const { id: userId } = sessionUser
+		const token = generateCode(this.DEACTIVATION_TOKEN_LENGTH)
+		const hashToken = await hash(token)
+		const expires = new Date(Date.now() + ms(this.DEACTIVATION_TOKEN_TTL))
+		const deactivated = await this.prismaService.user.update({
+			where: { id: userId },
+			data: {
+				deactivationCodeExpiresAt: expires,
+				hashDeactivationCode: hashToken
+			},
+			select: {
+				hashDeactivationCode: true,
+				deactivationCodeExpiresAt: true
+			}
 		})
+
+		if (!deactivated) throw new NotFoundException('User not found')
+
+		return {
+			token,
+			expires: deactivated.deactivationCodeExpiresAt
+		}
 	}
 
-	private async _generateToken({
-		isUUID = true,
+	private async _generateUUIDToken({
 		type,
 		user,
 		ttl
-	}: GenerateTokenOptions) {
-		const token = isUUID ? randomUUID() : generateCode(6)
+	}: GenerateTokenOptions): Promise<TokenPair> {
+		const token = randomUUID()
+		const hashToken = hashSHA256(token)
 		const expires = new Date(Date.now() + ms(ttl))
 		const existingToken = await this.prismaService.token.findFirst({
 			where: { userId: user.id, type }
@@ -98,20 +123,17 @@ export class TokenService {
 		if (existingToken)
 			await this.prismaService.token.delete({ where: { id: existingToken.id } })
 
-		return this.prismaService.token.create({
-			data: { expires, token, type, user: { connect: { id: user.id } } }
+		await this.prismaService.token.create({
+			data: { expires, hashToken, type, user: { connect: { id: user.id } } },
+			select: { hashToken: true }
 		})
+
+		return { token, hashToken }
 	}
 }
 
 interface GenerateTokenOptions {
-	isUUID?: boolean
 	type: TokenType
 	user: SessionUser
 	ttl: StringValue
-}
-
-interface VerifyTokenOptions {
-	token: string
-	tokenType: TokenType
 }

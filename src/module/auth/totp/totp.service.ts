@@ -48,8 +48,8 @@ export class TotpService implements TotpServiceInterface {
 			await this.prismaService.user.update({
 				where: { id: userId },
 				data: {
-					totpPendingSecret: encryptedSecret,
-					totpSecret: null
+					encryptedTotpPendingSecret: encryptedSecret,
+					encryptedTotpSecret: null
 				}
 			})
 
@@ -75,11 +75,12 @@ export class TotpService implements TotpServiceInterface {
 			typeof userIdOrUser === 'string'
 				? await this._getUserByIdOrThrow(userIdOrUser)
 				: userIdOrUser
-		const { totpSecret, totpPendingSecret, isTotpEnabled } = user
-		const secret = totpSecret
-			? this.encryptionService.decrypt(totpSecret)
-			: totpPendingSecret
-				? this.encryptionService.decrypt(totpPendingSecret)
+		const { encryptedTotpSecret, encryptedTotpPendingSecret, isTotpEnabled } =
+			user
+		const secret = encryptedTotpSecret
+			? this.encryptionService.decrypt(encryptedTotpSecret)
+			: encryptedTotpPendingSecret
+				? this.encryptionService.decrypt(encryptedTotpPendingSecret)
 				: null
 
 		if (secret === null && !isTotpEnabled)
@@ -101,15 +102,15 @@ export class TotpService implements TotpServiceInterface {
 
 			await this.verifyTotp(user, pincode)
 
-			const { recoveryCodes } = user
-			const isRecoveryCodesExist = !!recoveryCodes.length
+			const { hashRecoveryCodes } = user
+			const isRecoveryCodesExist = !!hashRecoveryCodes.length
 
 			let newRecoveryCodes: string[] | null = null
-			let newRecoveryCodesHashed: string[] | null = null
+			let newHashRecoveryCodes: string[] | null = null
 
 			if (!isRecoveryCodesExist) {
 				newRecoveryCodes = this._generateRecoveryCodes()
-				newRecoveryCodesHashed = await Promise.all(
+				newHashRecoveryCodes = await Promise.all(
 					newRecoveryCodes.map(code => hash(code))
 				)
 			}
@@ -118,9 +119,9 @@ export class TotpService implements TotpServiceInterface {
 				where: { id: user.id },
 				data: {
 					isTotpEnabled: true,
-					totpSecret: user.totpPendingSecret,
-					totpPendingSecret: null,
-					recoveryCodes: newRecoveryCodesHashed ?? recoveryCodes
+					encryptedTotpSecret: user.encryptedTotpPendingSecret,
+					encryptedTotpPendingSecret: null,
+					hashRecoveryCodes: newHashRecoveryCodes ?? hashRecoveryCodes
 				}
 			})
 
@@ -137,22 +138,26 @@ export class TotpService implements TotpServiceInterface {
 		try {
 			const { pincode, recoveryCode } = input
 			const user = await this._getUserByIdOrThrow(userId)
-			const { isTotpEnabled, totpSecret, recoveryCodes } = user
+			const { isTotpEnabled, encryptedTotpSecret, hashRecoveryCodes } = user
 			let filtered: string[] | null = null
 
-			if (isTotpEnabled === false && totpSecret === null)
+			if (isTotpEnabled === false && encryptedTotpSecret === null)
 				throw new BadRequestException('TOTP is already disabled')
-			if (!totpSecret) throw new NotFoundException('TOTP secret not found')
+			if (!encryptedTotpSecret)
+				throw new NotFoundException('TOTP secret not found')
 
 			if (pincode) await this.verifyTotp(user, pincode)
 			else if (recoveryCode) {
 				const correspondingCodeHashed =
-					await this._getCorrespondingRecoveryCode(recoveryCode, recoveryCodes)
+					await this._getCorrespondingRecoveryCode(
+						recoveryCode,
+						hashRecoveryCodes
+					)
 
 				if (correspondingCodeHashed === null)
 					throw new UnauthorizedException('Wrong recovery code')
 
-				filtered = recoveryCodes.filter(
+				filtered = hashRecoveryCodes.filter(
 					code => code !== correspondingCodeHashed
 				)
 			} else throw new BadRequestException('Provide pincode or secret')
@@ -161,8 +166,8 @@ export class TotpService implements TotpServiceInterface {
 				where: { id: user.id },
 				data: {
 					isTotpEnabled: false,
-					totpSecret: null,
-					recoveryCodes: filtered ?? recoveryCodes
+					encryptedTotpSecret: null,
+					hashRecoveryCodes: filtered ?? hashRecoveryCodes
 				}
 			})
 		} catch (error) {
@@ -180,11 +185,11 @@ export class TotpService implements TotpServiceInterface {
 
 		const { id } = user
 		const newCodes = this._generateRecoveryCodes()
-		const newCodesHashed = await Promise.all(newCodes.map(code => hash(code)))
+		const newHashCodes = await Promise.all(newCodes.map(code => hash(code)))
 
 		await this.prismaService.user.update({
 			where: { id },
-			data: { recoveryCodes: newCodesHashed }
+			data: { hashRecoveryCodes: newHashCodes }
 		})
 
 		return newCodes

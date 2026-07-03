@@ -20,7 +20,6 @@ export class CronService {
 
 	@Cron('* 0 * * *', { name: 'clearDeactivatedAccounts' })
 	public async clearDeactivatedAccounts() {
-		console.log('CLEAR_DEACTIVATED_CRON')
 		const deletionInterval = ms(
 			this.configService.getOrThrow<StringValue>('ACCOUNT_DELETION_INTERVAL')
 		)

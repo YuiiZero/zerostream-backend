@@ -128,7 +128,7 @@ input LoginInput {
 
 type Mutation {
   addTotp(addTotpInput: AddTotpInput!): AddTotpOutputModel!
-  deactivateAccount(deactivateAccountInput: TokenInput!): DeactivatedUserModel!
+  deactivateAccount(token: String!): DeactivatedUserModel!
   deleteSession(sessionId: String!): Boolean!
   generateRecoveryCodes(pincode: String!): [String!]!
   generateTotp: GenerateTOTPModel!
@@ -229,10 +229,6 @@ type TimeZoneModel {
   gmt_offset: Int!
   id: String!
   is_daylight_saving: Boolean!
-}
-
-input TokenInput {
-  token: String!
 }
 
 input VerifyEmailInput {

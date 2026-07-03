@@ -37,8 +37,10 @@ export class AccountService implements AccountServiceInterface {
 
 			await this._checkCredentialsUnique(input)
 
+			const { password: _, ...inputWithoutPassword } = input
+
 			await this.prismaService.user.create({
-				data: { ...input, password: await hash(password) }
+				data: { ...inputWithoutPassword, hashPassword: await hash(password) }
 			})
 
 			await this.verifyService.sendVerifyEmailToken({ email })
@@ -58,7 +60,7 @@ export class AccountService implements AccountServiceInterface {
 
 			if (!found) throw new UnauthorizedException('Invalid credentials')
 
-			const isPasswordVerified = await verify(found.password, password)
+			const isPasswordVerified = await verify(found.hashPassword, password)
 
 			if (!isPasswordVerified)
 				throw new UnauthorizedException('Invalid credentials')

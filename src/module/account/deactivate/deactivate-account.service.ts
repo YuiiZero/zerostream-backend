@@ -1,8 +1,12 @@
-import { BadRequestException, Injectable } from '@nestjs/common'
+import {
+	BadRequestException,
+	Injectable,
+	NotFoundException
+} from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { verify } from 'argon2'
 import { StringValue } from 'ms'
 
-import { TokenType } from '../../../../prisma/generated/prisma/enums'
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
 import { SessionMetadata } from '../../../shared/types/metadata.type'
 import { Ctx } from '../../../shared/types/type'
@@ -51,13 +55,13 @@ export class DeactivateAccountService implements DeactivateAccountServiceInterfa
 			await this.credentialsService.validateCredentials(userId, credentials)
 
 			const sessionUser = await this.userService.toSessionUser(user)
-			const tokenObject =
+			const { token } =
 				await this.tokenService.generateAccountDeactivationToken(sessionUser)
 
 			await this.mailService.sendAccountDeactivationEmail({
 				metadata,
 				to: user.email,
-				token: tokenObject.token,
+				token,
 				pincodeTTL: this.DEACTIVATION_TOKEN_TTL
 			})
 		} catch (error) {
@@ -66,15 +70,12 @@ export class DeactivateAccountService implements DeactivateAccountServiceInterfa
 	}
 
 	public async deactivateAccount(
+		userId: string,
 		token: string,
 		context: Ctx
 	): Promise<DeactivatedUserModelInterface> {
 		try {
-			const { userId } = await this.tokenService.verifyToken({
-				token,
-				tokenType: TokenType.DEACTIVATE_ACCOUNT
-			})
-
+			await this._verifyDeactivationToken(userId, token)
 			await this.sessionService.deleteSession(context.req.sessionID)
 
 			return this.prismaService.user.update({
@@ -91,5 +92,27 @@ export class DeactivateAccountService implements DeactivateAccountServiceInterfa
 		} catch (error) {
 			handleException(error, 'Cannot deactivate account')
 		}
+	}
+
+	private async _verifyDeactivationToken(userId: string, token: string) {
+		const user = await this.prismaService.user.findFirst({
+			where: { id: userId }
+		})
+
+		if (!user) throw new NotFoundException('User not found')
+		if (!user.hashDeactivationCode)
+			throw new NotFoundException('Token not found')
+
+		const isTokenVerified = await verify(user.hashDeactivationCode, token)
+
+		if (!isTokenVerified) throw new BadRequestException('Wrong token')
+
+		const { deactivationCodeExpiresAt: expires } = user
+
+		if (!expires) throw new Error('Expires is null')
+
+		const isTokenExpired = Date.now() > expires.getTime()
+
+		if (isTokenExpired) throw new BadRequestException('Token has expired')
 	}
 }

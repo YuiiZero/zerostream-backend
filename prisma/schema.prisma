@@ -12,7 +12,7 @@ model User {
 
   email String @unique
   username String @unique
-  password String
+  hashPassword String @map("password")
 
   nickname String?
   bio String?
@@ -26,12 +26,14 @@ model User {
   tokens Token[]
 
   isTotpEnabled Boolean @default(false) @map("is_totp_enabled")
-  totpSecret String? @map("totp_secret")
-  totpPendingSecret String? @map("totp_pending_secret")
-  recoveryCodes String[] @map("recovery_codes")
+  encryptedTotpSecret String? @map("totp_secret")
+  encryptedTotpPendingSecret String? @map("totp_pending_secret")
+  hashRecoveryCodes String[] @map("recovery_codes")
 
   isDeactivated Boolean @default(false) @map("is_deactivated")
   deactivatedAt DateTime? @map("deactivated_at")
+  hashDeactivationCode String? @map("deactivation_code")
+  deactivationCodeExpiresAt DateTime? @map("deactivation_code_expires_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -42,7 +44,7 @@ model User {
 model Token {
   id String @default(uuid()) @id
 
-  token String @unique
+  hashToken String @unique @map("token")
   type TokenType
   expires DateTime
 
@@ -59,7 +61,6 @@ enum TokenType {
   VERIFY_EMAIL
   RESET_PASSWORD
   AUTH_TELEGRAM
-  DEACTIVATE_ACCOUNT
 
   @@map("token_type")  
 }
