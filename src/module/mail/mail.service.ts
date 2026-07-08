@@ -9,6 +9,7 @@ import { SessionMetadata } from '../../shared/types/metadata.type'
 import { DeactivationTemplate } from './template/deactivation.template'
 import { DeletionTemplate } from './template/deletion.template'
 import { PasswordRecoveryTemplate } from './template/password-recovery.template'
+import { TotpTemplate } from './template/totp.template'
 import { VerificationTemplate } from './template/verification.template'
 
 @Injectable()
@@ -53,6 +54,15 @@ export class MailService {
 		this._sendEmail({ html, subject, to })
 	}
 
+	async sendAddAuthenticatorEmail(options: SendAuthenticatorOptions) {
+		const subject = 'Account security'
+		const { to, domain } = options
+		const html = await render(TotpTemplate({ domain }))
+
+		const info = await this._sendEmail({ html, subject, to })
+		console.log(info)
+	}
+
 	private _sendEmail(options: SendEmailOptions) {
 		const { to, html, subject } = options
 		return this.mailerService.sendMail({
@@ -91,5 +101,9 @@ interface SendPasswordRecoveryOptions extends EmailTokenHeader {
 }
 
 interface SendDeletionEmailOptions extends EmailHeader {
+	domain: string
+}
+
+interface SendAuthenticatorOptions extends EmailHeader {
 	domain: string
 }

@@ -78,7 +78,7 @@ export class DeactivateAccountService implements DeactivateAccountServiceInterfa
 			await this._verifyDeactivationToken(userId, token)
 			await this.sessionService.deleteSession(context.req.sessionID)
 
-			return this.prismaService.user.update({
+			const deactivated = await this.prismaService.user.update({
 				where: { id: userId },
 				data: {
 					isDeactivated: true,
@@ -89,6 +89,10 @@ export class DeactivateAccountService implements DeactivateAccountServiceInterfa
 					deactivatedAt: true
 				}
 			})
+
+			// log here
+
+			return deactivated
 		} catch (error) {
 			handleException(error, 'Cannot deactivate account')
 		}

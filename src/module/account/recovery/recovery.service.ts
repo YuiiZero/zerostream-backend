@@ -76,8 +76,7 @@ export class RecoveryService implements RecoveryServiceInterface {
 			if (isTotpEnabled) {
 				if (!pincode) throw new UnauthorizedException('Pincode not provided')
 
-				const isTotpVerified = this.totpService.verifyTotp(user, pincode)
-				if (!isTotpVerified) throw new UnauthorizedException('Wrong pincode')
+				await this.totpService.verifyTotp(user, pincode)
 			}
 
 			const { token } =
