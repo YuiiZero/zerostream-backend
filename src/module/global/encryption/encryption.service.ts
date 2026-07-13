@@ -2,8 +2,6 @@ import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto'
 
-import { handleException } from '../../../shared/util/handleException.util'
-
 import { EncryptionServiceInterface } from './interface/encryption.interface'
 
 @Injectable()
@@ -22,44 +20,36 @@ export class EncryptionService implements EncryptionServiceInterface {
 	}
 
 	public encrypt(string: string): string {
-		try {
-			const iv = randomBytes(12)
-			const cipher = createCipheriv(this.algorithm, this.key, iv)
-			const encrypted = Buffer.concat([
-				cipher.update(string, 'utf-8'),
-				cipher.final()
-			])
-			const authTag = cipher.getAuthTag()
+		const iv = randomBytes(12)
+		const cipher = createCipheriv(this.algorithm, this.key, iv)
+		const encrypted = Buffer.concat([
+			cipher.update(string, 'utf-8'),
+			cipher.final()
+		])
+		const authTag = cipher.getAuthTag()
 
-			return [
-				iv.toString('hex'),
-				authTag.toString('hex'),
-				encrypted.toString('hex')
-			].join(':')
-		} catch (error) {
-			handleException(error, 'Cannot encrypt data')
-		}
+		return [
+			iv.toString('hex'),
+			authTag.toString('hex'),
+			encrypted.toString('hex')
+		].join(':')
 	}
 
 	public decrypt(string: string): string {
-		try {
-			const [ivHex, authTagHex, encryptedHex] = string.split(':')
-			const decipher = createDecipheriv(
-				this.algorithm,
-				this.key,
-				Buffer.from(ivHex, 'hex')
-			)
+		const [ivHex, authTagHex, encryptedHex] = string.split(':')
+		const decipher = createDecipheriv(
+			this.algorithm,
+			this.key,
+			Buffer.from(ivHex, 'hex')
+		)
 
-			decipher.setAuthTag(Buffer.from(authTagHex, 'hex'))
+		decipher.setAuthTag(Buffer.from(authTagHex, 'hex'))
 
-			const decrypted = Buffer.concat([
-				decipher.update(Buffer.from(encryptedHex, 'hex')),
-				decipher.final()
-			])
+		const decrypted = Buffer.concat([
+			decipher.update(Buffer.from(encryptedHex, 'hex')),
+			decipher.final()
+		])
 
-			return decrypted.toString('utf-8')
-		} catch (error) {
-			handleException(error, 'Cannot decrypt data')
-		}
+		return decrypted.toString('utf-8')
 	}
 }

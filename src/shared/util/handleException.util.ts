@@ -1,14 +1,17 @@
 import { HttpException, InternalServerErrorException } from '@nestjs/common'
+import { PinoLogger } from 'nestjs-pino'
 
-export function handleException(e: unknown, message?: string): never {
-	if (e instanceof HttpException)
-		throw new HttpException(
-			message ? `${message}: ${e.message}` : e.message,
-			400,
-			{ cause: e }
-		)
+export function handleException(
+	logger: PinoLogger,
+	e: unknown,
+	message?: string
+): never {
+	if (e instanceof HttpException && e.getStatus() < 500) {
+		logger.warn(e, message)
+		throw e
+	}
 
-	console.error(e)
+	logger.error(e, message)
 
-	throw new InternalServerErrorException(e)
+	throw new InternalServerErrorException('Internal server error', { cause: e })
 }

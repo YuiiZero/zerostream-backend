@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config'
 import { hash, verify } from 'argon2'
 import { randomBytes } from 'crypto'
 import { encode } from 'hi-base32'
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
 import { TOTP } from 'otpauth'
 import * as QRCode from 'qrcode'
 
@@ -28,13 +29,16 @@ export class TotpService implements TotpServiceInterface {
 	public constructor(
 		private readonly prismaService: PrismaService,
 		private readonly configService: ConfigService,
-		private readonly encryptionService: EncryptionService
+		private readonly encryptionService: EncryptionService,
+		@InjectPinoLogger(TotpService.name)
+		private readonly logger: PinoLogger
 	) {
 		this.TOTP_PINCODE_LENGTH = +configService.getOrThrow('TOTP_PINCODE_LENGTH')
 		this.RECOVERY_CODE_COUNT = +configService.getOrThrow('RECOVERY_CODE_COUNT')
 	}
 
 	public async generateTotp(userId: string): Promise<GeneratedTotp> {
+		this.logger.info({ userId }, 'Generate TOTP request')
 		try {
 			const user = await this._getUserByIdOrThrow(userId)
 			const { isTotpEnabled } = user
@@ -56,12 +60,14 @@ export class TotpService implements TotpServiceInterface {
 			const totpKey = this._createTotp(secret, user.username).toString()
 			const qrCodeUrl = await QRCode.toDataURL(totpKey)
 
+			this.logger.info({ userId }, 'TOTP generated')
+
 			return {
 				secret,
 				qrCodeUrl
 			}
 		} catch (error) {
-			handleException(error, 'Cannot generate TOTP')
+			handleException(this.logger, error, 'Cannot generate TOTP')
 		}
 	}
 
@@ -71,29 +77,44 @@ export class TotpService implements TotpServiceInterface {
 		userIdOrUser: string | User,
 		pincode: string
 	): Promise<void> {
-		const user =
+		this.logger.info(
 			typeof userIdOrUser === 'string'
-				? await this._getUserByIdOrThrow(userIdOrUser)
-				: userIdOrUser
-		const { encryptedTotpSecret, encryptedTotpPendingSecret, isTotpEnabled } =
-			user
-		const secret = encryptedTotpSecret
-			? this.encryptionService.decrypt(encryptedTotpSecret)
-			: encryptedTotpPendingSecret
-				? this.encryptionService.decrypt(encryptedTotpPendingSecret)
-				: null
+				? { userId: userIdOrUser }
+				: { userId: userIdOrUser.id },
+			'Started TOTP verification'
+		)
 
-		if (secret === null && !isTotpEnabled)
-			throw new NotFoundException('TOTP is disabled')
-		if (secret === null) throw new NotFoundException('TOTP secret not found')
+		try {
+			const user =
+				typeof userIdOrUser === 'string'
+					? await this._getUserByIdOrThrow(userIdOrUser)
+					: userIdOrUser
+			const { encryptedTotpSecret, encryptedTotpPendingSecret, isTotpEnabled } =
+				user
+			const secret = encryptedTotpSecret
+				? this.encryptionService.decrypt(encryptedTotpSecret)
+				: encryptedTotpPendingSecret
+					? this.encryptionService.decrypt(encryptedTotpPendingSecret)
+					: null
 
-		const totp = this._createTotp(secret)
-		const delta = totp.validate({ token: pincode })
+			if (secret === null && !isTotpEnabled)
+				throw new NotFoundException('TOTP is disabled')
+			if (secret === null) throw new NotFoundException('TOTP secret not found')
 
-		if (delta === null) throw new BadRequestException('Wrong pincode')
+			const totp = this._createTotp(secret)
+			const delta = totp.validate({ token: pincode })
+
+			if (delta === null) throw new BadRequestException('Wrong pincode')
+
+			this.logger.info('TOTP verified')
+		} catch (error) {
+			handleException(this.logger, error, 'Failed TOTP verification')
+		}
 	}
 
 	public async addTotp(userId: string, pincode: string): Promise<string[]> {
+		this.logger.info({ userId }, 'Add TOTP request')
+
 		try {
 			const user = await this._getUserByIdOrThrow(userId)
 
@@ -115,7 +136,7 @@ export class TotpService implements TotpServiceInterface {
 				)
 			}
 
-			await this.prismaService.user.update({
+			const updated = await this.prismaService.user.update({
 				where: { id: user.id },
 				data: {
 					isTotpEnabled: true,
@@ -125,9 +146,17 @@ export class TotpService implements TotpServiceInterface {
 				}
 			})
 
+			this.logger.info(
+				{
+					isTotpEnabled: updated.isTotpEnabled,
+					hasRecoveryCodes: !!updated.hashRecoveryCodes.length
+				},
+				'TOTP added successfully'
+			)
+
 			return newRecoveryCodes ?? []
 		} catch (error) {
-			handleException(error, 'Cannot add TOTP')
+			handleException(this.logger, error, 'Failed adding TOTP')
 		}
 	}
 
@@ -135,6 +164,11 @@ export class TotpService implements TotpServiceInterface {
 		userId: string,
 		input: RemoveTotpInput
 	): Promise<void> {
+		this.logger.info(
+			{ userId, byPincode: !!input.pincode },
+			'Remove TOTP request'
+		)
+
 		try {
 			const { pincode, recoveryCode } = input
 			const user = await this._getUserByIdOrThrow(userId)
@@ -162,7 +196,7 @@ export class TotpService implements TotpServiceInterface {
 				)
 			} else throw new BadRequestException('Provide pincode or secret')
 
-			await this.prismaService.user.update({
+			const updated = await this.prismaService.user.update({
 				where: { id: user.id },
 				data: {
 					isTotpEnabled: false,
@@ -170,8 +204,16 @@ export class TotpService implements TotpServiceInterface {
 					hashRecoveryCodes: filtered ?? hashRecoveryCodes
 				}
 			})
+
+			this.logger.info(
+				{
+					userId: updated.id,
+					isTotpEnabled: updated.isTotpEnabled
+				},
+				'Successfully deactivated TOTP'
+			)
 		} catch (error) {
-			handleException(error, 'Cannot remove TOTP')
+			handleException(this.logger, error, 'Cannot remove TOTP')
 		}
 	}
 
@@ -179,20 +221,34 @@ export class TotpService implements TotpServiceInterface {
 		userId: string,
 		pincode: string
 	): Promise<string[]> {
-		const user = await this._getUserByIdOrThrow(userId)
+		this.logger.info({ userId }, 'Generate recovery codes request')
 
-		await this.verifyTotp(user, pincode)
+		try {
+			const user = await this._getUserByIdOrThrow(userId)
 
-		const { id } = user
-		const newCodes = this._generateRecoveryCodes()
-		const newHashCodes = await Promise.all(newCodes.map(code => hash(code)))
+			await this.verifyTotp(user, pincode)
 
-		await this.prismaService.user.update({
-			where: { id },
-			data: { hashRecoveryCodes: newHashCodes }
-		})
+			const { id } = user
+			const newCodes = this._generateRecoveryCodes()
+			const newHashCodes = await Promise.all(newCodes.map(code => hash(code)))
 
-		return newCodes
+			const updated = await this.prismaService.user.update({
+				where: { id },
+				data: { hashRecoveryCodes: newHashCodes }
+			})
+
+			this.logger.info(
+				{
+					userId: updated.id,
+					recoveryCodesCount: updated.hashRecoveryCodes.length
+				},
+				'Successfully generated new recovery codes'
+			)
+
+			return newCodes
+		} catch (error) {
+			handleException(this.logger, error, 'Failed generating recovery codes')
+		}
 	}
 	private async _getCorrespondingRecoveryCode(
 		recoveryCode: string,

@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { GraphQLModule } from '@nestjs/graphql'
 import { ScheduleModule } from '@nestjs/schedule'
+import { LoggerModule } from 'nestjs-pino'
 
 import { DeactivateAccountResolver } from '../module/account/deactivate/deactivate-account.resolver'
 import { DeactivateAccountService } from '../module/account/deactivate/deactivate-account.service'
@@ -30,6 +31,7 @@ import { MailModule } from '../module/mail/mail.module'
 import { MailResolver } from '../module/mail/mail.resolver'
 
 import { getGraphqlConf } from './conf/getGraphqlConf'
+import { getPinoHttpConfig } from './conf/getPinoHttpConf'
 import { PrismaModule } from './module/prisma/prisma.module'
 import { RedisModule } from './module/redis/redis.module'
 
@@ -54,7 +56,10 @@ import { RedisModule } from './module/redis/redis.module'
 		ScheduleModule.forRoot(),
 		CronModule,
 		CredentialsModule,
-		EncryptionModule
+		EncryptionModule,
+		LoggerModule.forRoot({
+			pinoHttp: getPinoHttpConfig()
+		})
 	],
 	providers: [
 		AccountResolver,

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config'
 import { NestFactory } from '@nestjs/core'
 import cookieParser from 'cookie-parser'
 import session from 'express-session'
+import { Logger } from 'nestjs-pino'
 
 import { getCorsConfig } from './conf/getCorsConf'
 import { getSessionConfig } from './conf/getSessionConfig'
@@ -20,6 +21,7 @@ async function bootstrap() {
 	)
 
 	app.useGlobalPipes(new ValidationPipe())
+	app.useLogger(app.get(Logger))
 
 	app.enableCors(getCorsConfig(config))
 

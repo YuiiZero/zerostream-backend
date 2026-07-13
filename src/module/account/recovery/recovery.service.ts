@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { hash } from 'argon2'
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
 
 import { User } from '../../../../prisma/generated/prisma/client'
 import { TokenType } from '../../../../prisma/generated/prisma/enums'
@@ -33,7 +34,9 @@ export class RecoveryService implements RecoveryServiceInterface {
 		private readonly userService: UserService,
 		private readonly totpService: TotpService,
 		private readonly mailService: MailService,
-		private readonly configService: ConfigService
+		private readonly configService: ConfigService,
+		@InjectPinoLogger(RecoveryService.name)
+		private readonly logger: PinoLogger
 	) {
 		this.ALLOWED_ORIGIN = this.configService.getOrThrow('ALLOWED_ORIGIN')
 	}
@@ -52,6 +55,13 @@ export class RecoveryService implements RecoveryServiceInterface {
 		userIdOrInput: string | SendResetPasswordTokenUnauthorizedInput,
 		input?: SendResetPasswordTokenAuthorizedInput
 	): Promise<void> {
+		this.logger.info(
+			typeof userIdOrInput === 'string'
+				? { userId: userIdOrInput }
+				: { email: userIdOrInput.userEmail },
+			'Password recovery token request'
+		)
+
 		try {
 			let user: User
 			let pincode: string | undefined
@@ -88,8 +98,17 @@ export class RecoveryService implements RecoveryServiceInterface {
 				metadata,
 				domain: this.ALLOWED_ORIGIN
 			})
+
+			this.logger.info(
+				{ userId: user.id, email },
+				'Password recovery token sent'
+			)
 		} catch (error) {
-			handleException(error, 'Cannot send reset password token')
+			handleException(
+				this.logger,
+				error,
+				'Failed sending password recovery token'
+			)
 		}
 	}
 
@@ -97,6 +116,8 @@ export class RecoveryService implements RecoveryServiceInterface {
 		input: ResetPasswordInputInterface,
 		sessionId?: string
 	): Promise<void> {
+		this.logger.info({ hasSession: !!sessionId }, 'Password reset attempt')
+
 		try {
 			const { token, newPassword } = input
 			const { userId } = await this.tokenService.verifyUUIDToken(
@@ -112,13 +133,15 @@ export class RecoveryService implements RecoveryServiceInterface {
 				}
 			})
 
+			this.logger.info({ userId }, 'Password reset successful')
+
 			if (sessionId) {
 				await this.sessionService.deleteAllSessions(userId, sessionId)
 			} else {
 				await this.sessionService.deleteAllSessions(userId)
 			}
 		} catch (error) {
-			handleException(error, 'Cannot reset password')
+			handleException(this.logger, error, 'Failed password reset')
 		}
 	}
 }

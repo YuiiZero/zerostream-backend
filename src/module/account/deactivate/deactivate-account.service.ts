@@ -6,6 +6,7 @@ import {
 import { ConfigService } from '@nestjs/config'
 import { verify } from 'argon2'
 import { StringValue } from 'ms'
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
 
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
 import { SessionMetadata } from '../../../shared/types/metadata.type'
@@ -34,7 +35,9 @@ export class DeactivateAccountService implements DeactivateAccountServiceInterfa
 		private readonly credentialsService: CredentialsService,
 		private readonly mailService: MailService,
 		private readonly configService: ConfigService,
-		private readonly sessionService: SessionService
+		private readonly sessionService: SessionService,
+		@InjectPinoLogger(DeactivateAccountService.name)
+		private readonly logger: PinoLogger
 	) {
 		this.DEACTIVATION_TOKEN_TTL = configService.getOrThrow<StringValue>(
 			'DEACTIVATION_TOKEN_TTL'
@@ -46,6 +49,8 @@ export class DeactivateAccountService implements DeactivateAccountServiceInterfa
 		metadata: SessionMetadata,
 		credentials: CredentialsInput
 	): Promise<void> {
+		this.logger.info({ userId }, 'Deactivation token request')
+
 		try {
 			const user = await this.userService.getUnique('id', userId)
 
@@ -64,8 +69,10 @@ export class DeactivateAccountService implements DeactivateAccountServiceInterfa
 				token,
 				pincodeTTL: this.DEACTIVATION_TOKEN_TTL
 			})
+
+			this.logger.info({ userId }, 'Deactivation token sent')
 		} catch (error) {
-			handleException(error, 'Cannot send account deactivation token')
+			handleException(this.logger, error, 'Failed sending deactivation token')
 		}
 	}
 
@@ -74,6 +81,8 @@ export class DeactivateAccountService implements DeactivateAccountServiceInterfa
 		token: string,
 		context: Ctx
 	): Promise<DeactivatedUserModelInterface> {
+		this.logger.info({ userId }, 'Account deactivation request')
+
 		try {
 			await this._verifyDeactivationToken(userId, token)
 			await this.sessionService.deleteSession(context.req.sessionID)
@@ -90,11 +99,14 @@ export class DeactivateAccountService implements DeactivateAccountServiceInterfa
 				}
 			})
 
-			// log here
+			this.logger.info(
+				{ userId, deactivatedAt: deactivated.deactivatedAt },
+				'Successful deactivation'
+			)
 
 			return deactivated
 		} catch (error) {
-			handleException(error, 'Cannot deactivate account')
+			handleException(this.logger, error, 'Failed account deactivation')
 		}
 	}
 

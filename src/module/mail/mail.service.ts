@@ -59,8 +59,7 @@ export class MailService {
 		const { to, domain } = options
 		const html = await render(TotpTemplate({ domain }))
 
-		const info = await this._sendEmail({ html, subject, to })
-		console.log(info)
+		await this._sendEmail({ html, subject, to })
 	}
 
 	private _sendEmail(options: SendEmailOptions) {

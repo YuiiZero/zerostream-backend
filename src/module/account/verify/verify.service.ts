@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
 
 import { TokenType } from '../../../../prisma/generated/prisma/enums'
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
@@ -23,7 +24,9 @@ export class VerifyService implements VerifyServiceInterface {
 		private readonly tokenService: TokenService,
 		private readonly userService: UserService,
 		private readonly mailService: MailService,
-		private readonly configService: ConfigService
+		private readonly configService: ConfigService,
+		@InjectPinoLogger(VerifyService.name)
+		private readonly logger: PinoLogger
 	) {
 		this.ALLOWED_ORIGIN = configService.getOrThrow('ALLOWED_ORIGIN')
 	}
@@ -47,26 +50,41 @@ export class VerifyService implements VerifyServiceInterface {
 				token,
 				domain: this.ALLOWED_ORIGIN
 			})
+
+			this.logger.info({ email: user.email }, 'Email verify token sent')
 		} catch (error) {
-			handleException(error, 'Cannot verify email')
+			handleException(this.logger, error, 'Sending verify email token failed')
 		}
 	}
 
 	public async verifyEmail(input: VerifyEmailInput): Promise<void> {
-		const { token } = input
-		const tokenObject = await this.tokenService.verifyUUIDToken(
-			token,
-			TokenType.VERIFY_EMAIL
-		)
-		const { userId: id } = tokenObject
+		try {
+			const { token } = input
+			const tokenObject = await this.tokenService.verifyUUIDToken(
+				token,
+				TokenType.VERIFY_EMAIL
+			)
+			const { userId: id } = tokenObject
 
-		await this.prismaService.user.update({
-			where: {
-				id
-			},
-			data: {
-				isEmailVerified: true
-			}
-		})
+			const updated = await this.prismaService.user.update({
+				where: {
+					id
+				},
+				data: {
+					isEmailVerified: true
+				}
+			})
+
+			this.logger.info(
+				{
+					userId: updated.id,
+					email: updated.email,
+					isEmailVerified: updated.isEmailVerified
+				},
+				'Email verified'
+			)
+		} catch (error) {
+			handleException(this.logger, error, 'Email verification failed')
+		}
 	}
 }

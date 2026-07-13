@@ -4,6 +4,7 @@ import {
 	UnauthorizedException
 } from '@nestjs/common'
 import { hash, verify } from 'argon2'
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
 
 import { User } from '../../../../prisma/generated/prisma/client'
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
@@ -24,7 +25,9 @@ export class AccountService implements AccountServiceInterface {
 		private readonly prismaService: PrismaService,
 		private readonly userService: UserService,
 		private readonly verifyService: VerifyService,
-		private readonly totpService: TotpService
+		private readonly totpService: TotpService,
+		@InjectPinoLogger(AccountService.name)
+		private readonly logger: PinoLogger
 	) {}
 
 	public me(userId: string): Promise<PrivateUserModel> {
@@ -32,6 +35,8 @@ export class AccountService implements AccountServiceInterface {
 	}
 
 	public async register(input: RegisterInput): Promise<RegisterMessageModel> {
+		this.logger.info({ email: input.email }, 'Register request')
+
 		try {
 			const { password, email } = input
 
@@ -39,19 +44,30 @@ export class AccountService implements AccountServiceInterface {
 
 			const { password: _, ...inputWithoutPassword } = input
 
-			await this.prismaService.user.create({
+			const user = await this.prismaService.user.create({
 				data: { ...inputWithoutPassword, hashPassword: await hash(password) }
 			})
 
 			await this.verifyService.sendVerifyEmailToken({ email })
 
+			this.logger.info(
+				{ userId: user.id, email: user.email, username: user.username },
+				'User registered'
+			)
+
 			return { message: 'Verify your email to finish registration' }
 		} catch (error) {
-			handleException(error, 'Cannot register user')
+			handleException(this.logger, error, 'Register failed')
 		}
 	}
 
 	public async getLoginUser(userLoginData: LoginInput): Promise<User> {
+		this.logger.info(
+			{
+				login: userLoginData.email ?? userLoginData.username
+			},
+			'Login attempt'
+		)
 		try {
 			const { password, pincode, email, username } = userLoginData
 			const found: User | null = email
@@ -74,9 +90,11 @@ export class AccountService implements AccountServiceInterface {
 				if (!isTotpVerified) throw new UnauthorizedException('Wrong pincode')
 			}
 
+			this.logger.info({ userId: found.id }, 'Successful login')
+
 			return found
 		} catch (error) {
-			handleException(error, 'Cannot login')
+			handleException(this.logger, error, 'Login failed')
 		}
 	}
 

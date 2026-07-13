@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config'
 import { RedisClientType } from '@redis/client'
 import { Request } from 'express'
 import type { SessionData } from 'express-session'
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
 
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
 import { RedisService } from '../../../core/module/redis/redis.service'
@@ -27,7 +28,9 @@ export class SessionService implements SessionServiceInterface {
 		private readonly configService: ConfigService,
 		private readonly prismaService: PrismaService,
 		private readonly redisService: RedisService,
-		private readonly userService: UserService
+		private readonly userService: UserService,
+		@InjectPinoLogger(SessionService.name)
+		private readonly logger: PinoLogger
 	) {
 		this.sessionCookieName = configService.getOrThrow<string>('SESSION_NAME')
 		this.redisClient = redisService.client
@@ -72,7 +75,7 @@ export class SessionService implements SessionServiceInterface {
 
 			return req.sessionID
 		} catch (error) {
-			handleException(error, 'Cannot create session')
+			handleException(this.logger, error, 'Failed creating session')
 		}
 	}
 
@@ -93,7 +96,7 @@ export class SessionService implements SessionServiceInterface {
 
 			return sessions
 		} catch (error) {
-			handleException(error, 'Cannot get sessions')
+			handleException(this.logger, error, 'Failed fetching sessions')
 		}
 	}
 
@@ -145,7 +148,7 @@ export class SessionService implements SessionServiceInterface {
 				})
 			}
 		} catch (error) {
-			handleException(error, 'Cannot delete session')
+			handleException(this.logger, error, 'Failed deleting session')
 		}
 	}
 
@@ -182,7 +185,7 @@ export class SessionService implements SessionServiceInterface {
 
 			await this.redisClient.del(sessionIDs)
 		} catch (error) {
-			handleException(error, 'Cannot delete all sessions')
+			handleException(this.logger, error, 'Failed deleting sessions')
 		}
 	}
 }

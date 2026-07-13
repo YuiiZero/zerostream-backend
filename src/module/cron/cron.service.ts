@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import ms, { StringValue } from 'ms'
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
 
 import { PrismaService } from '../../core/module/prisma/prisma.service'
 import { handleException } from '../../shared/util/handleException.util'
@@ -17,7 +18,9 @@ export class CronService implements CronServiceInterface {
 	public constructor(
 		private readonly prismaService: PrismaService,
 		private readonly configService: ConfigService,
-		private readonly mailService: MailService
+		private readonly mailService: MailService,
+		@InjectPinoLogger(CronService.name)
+		private readonly logger: PinoLogger
 	) {
 		this.ALLOWED_ORIGIN = configService.getOrThrow('ALLOWED_ORIGIN')
 		this.ACCOUNT_DELETION_INTERVAL = configService.getOrThrow<StringValue>(
@@ -29,6 +32,13 @@ export class CronService implements CronServiceInterface {
 		name: 'clearDeactivatedUsersCron'
 	})
 	public async clearDeactivatedUsersCron(): Promise<void> {
+		this.logger.info(
+			{
+				jobName: 'clearDeactivatedUsersCron'
+			},
+			'Started clearing deactivated users'
+		)
+
 		try {
 			const deletionDate = new Date(
 				Date.now() - ms(this.ACCOUNT_DELETION_INTERVAL)
@@ -46,7 +56,17 @@ export class CronService implements CronServiceInterface {
 				}
 			})
 
-			if (userEntries.length === 0) return
+			if (userEntries.length === 0) {
+				this.logger.info(
+					{
+						jobName: 'clearDeactivatedUsersCron',
+						clearedCount: 0
+					},
+					'Finished clearing deactivated users'
+				)
+
+				return
+			}
 
 			const userIds = userEntries.map(({ id }) => id)
 			const emailResults = await Promise.allSettled(
@@ -62,17 +82,37 @@ export class CronService implements CronServiceInterface {
 			)
 
 			if (failedEmails.length > 0) {
-				// log here
+				failedEmails.forEach(failed => {
+					this.logger.error(
+						{
+							jobName: 'clearDeactivatedUsersCron',
+							reason: failed.reason
+						},
+						'Failed sending account deletion notification'
+					)
+				})
 			}
 
-			const { count: deletedCount } = await this.prismaService.user.deleteMany({
+			const { count: clearedCount } = await this.prismaService.user.deleteMany({
 				where: {
 					id: { in: userIds },
 					isDeactivated: true
 				}
 			})
+
+			this.logger.info(
+				{
+					jobName: 'clearDeactivatedUsersCron',
+					clearedCount
+				},
+				'Finished clearing deactivated users'
+			)
 		} catch (error) {
-			handleException(error, 'Failed to execute clearDeactivatedUsersCron.')
+			handleException(
+				this.logger,
+				error,
+				'Failed to execute clearDeactivatedUsersCron'
+			)
 		}
 	}
 
@@ -80,8 +120,15 @@ export class CronService implements CronServiceInterface {
 		name: 'clearExpiredTokensCron'
 	})
 	public async clearExpiredTokensCron(): Promise<void> {
+		this.logger.info(
+			{
+				jobName: 'clearExpiredTokensCron'
+			},
+			'Started clearing expired tokens'
+		)
+
 		try {
-			const { count: deletedCount } = await this.prismaService.token.deleteMany(
+			const { count: clearedCount } = await this.prismaService.token.deleteMany(
 				{
 					where: {
 						expires: {
@@ -90,8 +137,20 @@ export class CronService implements CronServiceInterface {
 					}
 				}
 			)
+
+			this.logger.info(
+				{
+					jobName: 'clearExpiredTokensCron',
+					clearedCount
+				},
+				'Finished clearing expired tokens'
+			)
 		} catch (error) {
-			handleException(error, 'Failed to execute clearExpiredTokensCron.')
+			handleException(
+				this.logger,
+				error,
+				'Failed to execute clearExpiredTokensCron'
+			)
 		}
 	}
 
@@ -99,6 +158,13 @@ export class CronService implements CronServiceInterface {
 		name: 'sendTotpActivationMessageCron'
 	})
 	public async sendTotpActivationMessageCron(): Promise<void> {
+		this.logger.info(
+			{
+				jobName: 'sendTotpActivationMessageCron'
+			},
+			'Started sending TOTP activation reminders'
+		)
+
 		try {
 			const usersWithoutTotp = await this.prismaService.user.findMany({
 				where: {
@@ -123,14 +189,22 @@ export class CronService implements CronServiceInterface {
 			)
 
 			if (failedEmails.length > 0) {
-				// log here
+				failedEmails.forEach(failed => {
+					this.logger.error(
+						{
+							jobName: 'sendTotpActivationMessageCron',
+							reason: failed.reason
+						},
+						'Failed sending TOTP activation reminder'
+					)
+				})
 			}
-
-			failedEmails.forEach(failed => {
-				// log here
-			})
 		} catch (error) {
-			handleException(error, 'Failed to execute sendTotpActivationMessageCron.')
+			handleException(
+				this.logger,
+				error,
+				'Failed to execute sendTotpActivationMessageCron'
+			)
 		}
 	}
 }
