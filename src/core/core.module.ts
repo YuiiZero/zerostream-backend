@@ -34,6 +34,7 @@ import { getGraphqlConf } from './conf/getGraphqlConf'
 import { getPinoHttpConfig } from './conf/getPinoHttpConf'
 import { PrismaModule } from './module/prisma/prisma.module'
 import { RedisModule } from './module/redis/redis.module'
+import { StorageModule } from './module/storage/storage.module';
 
 @Module({
 	imports: [
@@ -59,7 +60,8 @@ import { RedisModule } from './module/redis/redis.module'
 		EncryptionModule,
 		LoggerModule.forRoot({
 			pinoHttp: getPinoHttpConfig()
-		})
+		}),
+		StorageModule
 	],
 	providers: [
 		AccountResolver,
