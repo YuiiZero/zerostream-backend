@@ -3,6 +3,7 @@ import { FileUpload, GraphQLUpload } from 'graphql-upload-ts'
 
 import { Authorization } from '../../../shared/decorator/authorization.decorator'
 import { CurrentUserId } from '../../../shared/decorator/current-user-id.decorator'
+import { AVATAR_MIME_TYPES, FilePipe } from '../../../shared/pipe/file.pipe'
 
 import { UpdateProfileInfoInput } from './input/update-profile-info.input'
 import { ProfileService } from './profile.service'
@@ -15,7 +16,15 @@ export class ProfileResolver {
 	@Mutation(() => Boolean)
 	public async updateAvatar(
 		@CurrentUserId() userId: string,
-		@Args('avatar', { type: () => GraphQLUpload }) avatar: FileUpload
+		@Args(
+			'avatar',
+			{ type: () => GraphQLUpload },
+			new FilePipe({
+				allowedMimeTypes: AVATAR_MIME_TYPES,
+				maxFileSize: parseInt(process.env['MAX_AVATAR_SIZE'] ?? '5242880')
+			})
+		)
+		avatar: FileUpload
 	): Promise<boolean> {
 		await this.profileService.updateAvatar(userId, avatar)
 

@@ -17,8 +17,9 @@ async function bootstrap() {
 	const redis = app.get(RedisService)
 	const logger = app.get(Logger)
 	const port = config.getOrThrow<number>('APPLICATION_PORT')
+	const MAX_UPLOAD_SIZE = config.getOrThrow<number>('MAX_UPLOAD_SIZE')
 
-	app.use('/graphql', graphqlUploadExpress({ maxFileSize: 3_000_000 }))
+	app.use('/graphql', graphqlUploadExpress({ maxFileSize: MAX_UPLOAD_SIZE }))
 	app.use(
 		cookieParser(config.getOrThrow<string>('SESSION_SECRET')),
 		session(getSessionConfig(config, redis.store))
