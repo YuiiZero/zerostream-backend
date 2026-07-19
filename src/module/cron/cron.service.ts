@@ -5,6 +5,7 @@ import ms, { StringValue } from 'ms'
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
 
 import { PrismaService } from '../../core/module/prisma/prisma.service'
+import { StorageService } from '../../core/module/storage/storage.service'
 import { handleException } from '../../shared/util/handleException.util'
 import { MailService } from '../mail/mail.service'
 
@@ -20,7 +21,8 @@ export class CronService implements CronServiceInterface {
 		private readonly configService: ConfigService,
 		private readonly mailService: MailService,
 		@InjectPinoLogger(CronService.name)
-		private readonly logger: PinoLogger
+		private readonly logger: PinoLogger,
+		private readonly storageService: StorageService
 	) {
 		this.ALLOWED_ORIGIN = configService.getOrThrow('ALLOWED_ORIGIN')
 		this.ACCOUNT_DELETION_INTERVAL = configService.getOrThrow<StringValue>(
@@ -52,7 +54,8 @@ export class CronService implements CronServiceInterface {
 				},
 				select: {
 					id: true,
-					email: true
+					email: true,
+					avatar: true
 				}
 			})
 
@@ -70,11 +73,13 @@ export class CronService implements CronServiceInterface {
 
 			const userIds = userEntries.map(({ id }) => id)
 			const emailResults = await Promise.allSettled(
-				userEntries.map(async ({ email }) => {
+				userEntries.map(async ({ email, avatar }) => {
 					await this.mailService.sendAccountDeletionEmail({
 						domain: this.ALLOWED_ORIGIN,
 						to: email
 					})
+
+					if (avatar) await this.storageService.remove(avatar)
 				})
 			)
 			const failedEmails = emailResults.filter(

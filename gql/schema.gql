@@ -129,6 +129,7 @@ input LoginInput {
 type Mutation {
   addTotp(addTotpInput: AddTotpInput!): AddTotpOutputModel!
   deactivateAccount(token: String!): DeactivatedUserModel!
+  deleteAvatar: Boolean!
   deleteSession(sessionId: String!): Boolean!
   generateRecoveryCodes(pincode: String!): [String!]!
   generateTotp: GenerateTOTPModel!
@@ -146,6 +147,8 @@ type Mutation {
   sendResetPasswordTokenAuthorized(sendResetPasswordTokenAuthorizedInput: SendResetPasswordTokenAuthorizedInput!): Boolean!
   sendResetPasswordTokenUnauthorized(sendResetPasswordTokenUnauthorizedInput: SendResetPasswordTokenUnauthorizedInput!): Boolean!
   sendVerifyEmailToken(sendVerifyEmailTokenInput: SendVerifyEmailTokenInput!): Boolean!
+  updateAvatar(avatar: Upload!): Boolean!
+  updateProfileInfo(input: UpdateProfileInfoInput!): Boolean!
   verifyEmail(verifyEmailInput: VerifyEmailInput!): Boolean!
 }
 
@@ -230,6 +233,14 @@ type TimeZoneModel {
   id: String!
   is_daylight_saving: Boolean!
 }
+
+input UpdateProfileInfoInput {
+  bio: String
+  nickname: String
+}
+
+"""The `Upload` scalar type represents a file upload."""
+scalar Upload
 
 input VerifyEmailInput {
   token: String!

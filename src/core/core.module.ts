@@ -7,6 +7,9 @@ import { LoggerModule } from 'nestjs-pino'
 
 import { DeactivateAccountResolver } from '../module/account/deactivate/deactivate-account.resolver'
 import { DeactivateAccountService } from '../module/account/deactivate/deactivate-account.service'
+import { ProfileModule } from '../module/account/profile/profile.module'
+import { ProfileResolver } from '../module/account/profile/profile.resolver'
+import { ProfileService } from '../module/account/profile/profile.service'
 import { RecoveryResolver } from '../module/account/recovery/recovery.resolver'
 import { RecoveryService } from '../module/account/recovery/recovery.service'
 import { VerifyResolver } from '../module/account/verify/verify.resolver'
@@ -34,7 +37,8 @@ import { getGraphqlConf } from './conf/getGraphqlConf'
 import { getPinoHttpConfig } from './conf/getPinoHttpConf'
 import { PrismaModule } from './module/prisma/prisma.module'
 import { RedisModule } from './module/redis/redis.module'
-import { StorageModule } from './module/storage/storage.module';
+import { StorageModule } from './module/storage/storage.module'
+import { StorageService } from './module/storage/storage.service'
 
 @Module({
 	imports: [
@@ -61,7 +65,8 @@ import { StorageModule } from './module/storage/storage.module';
 		LoggerModule.forRoot({
 			pinoHttp: getPinoHttpConfig()
 		}),
-		StorageModule
+		StorageModule,
+		ProfileModule
 	],
 	providers: [
 		AccountResolver,
@@ -81,7 +86,10 @@ import { StorageModule } from './module/storage/storage.module';
 		UserService,
 		CronService,
 		CredentialsService,
-		EncryptionService
+		EncryptionService,
+		StorageService,
+		ProfileResolver,
+		ProfileService
 	]
 })
 export class CoreModule {}

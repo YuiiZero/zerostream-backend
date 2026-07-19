@@ -6,6 +6,7 @@ import {
 	IsString,
 	Length,
 	Matches,
+	MaxLength,
 	MinLength
 } from 'class-validator'
 
@@ -34,12 +35,14 @@ export class RegisterInput implements RegisterInputInterface {
 	@IsOptional()
 	@IsString()
 	@IsNotEmpty()
+	@Length(4, 16)
 	public nickname?: string
 
 	@Field({ nullable: true })
 	@IsOptional()
 	@IsString()
 	@IsNotEmpty()
+	@MaxLength(300)
 	public bio?: string
 
 	@Field({ nullable: true })
