@@ -15,11 +15,12 @@ export async function getSessionMetadata(
 	const deviceDetector = new DeviceDetector()
 	const device = deviceDetector.parse(userAgent)
 	const ipapiKey = configService.getOrThrow<string>('IPAPI_KEY')
-	const locationDetails: LocationLookupResult = isDev(configService)
+	const IS_DEV = isDev()
+	const locationDetails: LocationLookupResult = IS_DEV
 		? locationDetailsPlaceholder
 		: (
 				await axios.get(
-					`https://api.ipapi.com/api/${!isDev(configService) ? '89.127.194.227' : ip}?access_key=${ipapiKey}`
+					`https://api.ipapi.com/api/${!IS_DEV ? '89.127.194.227' : ip}?access_key=${ipapiKey}`
 				)
 			).data
 

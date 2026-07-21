@@ -2,6 +2,8 @@ import { Params } from 'nestjs-pino'
 import { randomUUID } from 'node:crypto'
 import os from 'os'
 
+import { isDev } from '../../shared/util/isDev.util'
+
 export const getPinoHttpConfig = (): Params['pinoHttp'] => ({
 	genReqId: (req, res) => {
 		const requestId = req.headers['x-request-id'] ?? randomUUID()
@@ -20,6 +22,7 @@ export const getPinoHttpConfig = (): Params['pinoHttp'] => ({
 				}
 			}
 		: undefined,
+	level: isDev() ? 'debug' : 'info',
 	redact: {
 		paths: [
 			'user.password',
@@ -38,6 +41,14 @@ export const getPinoHttpConfig = (): Params['pinoHttp'] => ({
 			'req.headers.authorization',
 			'req.headers.cookie',
 			'req.headers["postman-token"]',
+			'req.method',
+			'req.query',
+			'req.url',
+			'req.params',
+			'req.headers.accept',
+			'req.headers.["accept-encoding"]',
+			'req.headers.connection',
+			'req.headers.["content-length"]',
 
 			'req.session.metadata',
 
@@ -45,7 +56,13 @@ export const getPinoHttpConfig = (): Params['pinoHttp'] => ({
 			'req.body.variables.newPassword',
 			'req.body.variables.confirmPassword',
 
-			'res.headers["set-cookie"]'
+			'res.headers["set-cookie"]',
+			'res.headers["x-powered-by"]',
+			'res.headers["access-control-allow-origin"]',
+			'res.headers["vary"]',
+			'res.headers["access-control-allow-credentials"]',
+			'res.headers["content-length"]',
+			'res.headers["etag"]'
 		],
 		remove: true
 	},

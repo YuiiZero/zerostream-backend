@@ -2,22 +2,22 @@ import { ConfigService } from '@nestjs/config'
 import { CookieOptions, SessionOptions, Store } from 'express-session'
 import ms, { StringValue } from 'ms'
 
-import { isDev as isDevEnv } from '../../shared/util/isDev.util'
+import { isDev } from '../../shared/util/isDev.util'
 
 export function getSessionConfig(
 	configService: ConfigService,
 	store: Store
 ): SessionOptions {
-	const isDev = isDevEnv(configService)
+	const IS_DEV = isDev()
 	const cookieOpts: CookieOptions = {
-		httpOnly: isDev,
-		secure: !isDev,
+		httpOnly: IS_DEV,
+		secure: !IS_DEV,
 		maxAge: ms(configService.getOrThrow<StringValue>('SESSION_TTL')),
 		sameSite: 'lax'
 	}
 
 	return {
-		secret: isDev
+		secret: IS_DEV
 			? 'sampleSecret'
 			: configService.getOrThrow<string>('SESSION_SECRET'),
 		saveUninitialized: false,
