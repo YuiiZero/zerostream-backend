@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import {
+	BadRequestException,
+	Injectable,
+	NotFoundException
+} from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client'
 import { FileUpload } from 'graphql-upload-ts'
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
@@ -18,7 +23,8 @@ export class ProfileService {
 		private readonly prismaService: PrismaService,
 		private readonly userService: UserService,
 		@InjectPinoLogger(ProfileService.name)
-		private readonly logger: PinoLogger
+		private readonly logger: PinoLogger,
+		private readonly configService: ConfigService
 	) {}
 
 	public async updateAvatar(userId: string, file: FileUpload): Promise<void> {
@@ -83,11 +89,21 @@ export class ProfileService {
 	) {
 		this.logger.info({ userId })
 		try {
-			const { bio, nickname } = input
+			const { bio, nickname, socialLinks } = input
 			const data: UpdateProfileInfoInput = {}
 
 			if (bio !== undefined) data.bio = bio
 			if (nickname !== undefined) data.nickname = nickname
+			if (socialLinks !== undefined) {
+				if (
+					socialLinks.length >
+					this.configService.getOrThrow<number>('MAX_SOCIAL_LINKS')
+				)
+					throw new BadRequestException('Too many social links')
+
+				data.socialLinks = socialLinks
+			}
+
 			if (Object.keys(data).length === 0) return
 
 			await this.prismaService.user.update({

@@ -34,6 +34,8 @@ model User {
   deactivatedAt DateTime? @map("deactivated_at")
   hashDeactivationCode String? @map("deactivation_code")
   deactivationCodeExpiresAt DateTime? @map("deactivation_code_expires_at")
+  
+  socialLinks String[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

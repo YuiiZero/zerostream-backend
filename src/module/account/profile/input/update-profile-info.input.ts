@@ -3,6 +3,7 @@ import {
 	IsNotEmpty,
 	IsOptional,
 	IsString,
+	IsUrl,
 	Length,
 	MaxLength
 } from 'class-validator'
@@ -21,4 +22,19 @@ export class UpdateProfileInfoInput {
 	@IsNotEmpty()
 	@MaxLength(300)
 	bio?: string
+
+	@Field(() => [String], { nullable: true })
+	@IsOptional()
+	@IsUrl(
+		{
+			protocols: ['https'],
+			require_protocol: true,
+			allow_query_components: false
+		},
+		{
+			each: true,
+			message: 'Bad social link'
+		}
+	)
+	socialLinks?: string[]
 }
