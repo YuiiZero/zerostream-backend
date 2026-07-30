@@ -8,11 +8,19 @@
 	"scripts": {
 		"build": "nest build",
 		"format": "prettier --write \"src/**/*.ts\"",
+		"lint": "eslint \"src/**/*.ts\" --fix",
 		"start": "nest start",
-		"start:dev": "nest start --watch",
-		"start:debug": "nest start --debug --watch",
-		"start:prod": "node dist/core/main",
-		"lint": "eslint \"src/**/*.ts\" --fix"
+		"start:dev": "nest start --env-file .env.dev --watch",
+		"start:debug": "nest start --env-file .env.dev --debug --watch",
+		"start:prod": "node --env-file .env.prod dist/core/main",
+		"start:app": "docker compose --env-file .env.dev -f docker/docker-compose.dev.yml start app",
+		"compose:dev": "docker compose --env-file .env.dev -f docker/docker-compose.dev.yml up -d",
+		"compose:prod": "docker compose --env-file .env.prod -f docker/docker-compose.prod.yml up -d",
+		"compose:down": "docker compose -f docker/docker-compose.dev.yml down",
+		"compose:restart": "docker compose --env-file .env.dev -f docker/docker-compose.dev.yml restart app",
+		"compose:logs": "docker compose --env-file .env.dev -f docker/docker-compose.dev.yml logs -f app",
+		"compose:ps": "docker compose -f docker/docker-compose.dev.yml ps",
+		"prisma:push": "concurrently \"yarn prisma db push\" \"yarn prisma generate\""
 	},
 	"dependencies": {
 		"@apollo/server": "^5.5.1",
@@ -70,6 +78,7 @@
 		"@types/node": "^25.6.0",
 		"@types/qrcode": "^1.5.6",
 		"@types/react": "^19.2.15",
+		"concurrently": "^10.0.4",
 		"eslint": "^9.18.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-prettier": "^5.2.2",

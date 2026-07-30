@@ -3,7 +3,7 @@ import { FileUpload, GraphQLUpload } from 'graphql-upload-ts'
 
 import { Authorization } from '../../../shared/decorator/authorization.decorator'
 import { CurrentUserId } from '../../../shared/decorator/current-user-id.decorator'
-import { AVATAR_MIME_TYPES, FilePipe } from '../../../shared/pipe/file.pipe'
+import { FilePipe, IMAGE_MIME_TYPES } from '../../../shared/pipe/file.pipe'
 
 import { UpdateProfileInfoInput } from './input/update-profile-info.input'
 import { ProfileService } from './profile.service'
@@ -20,7 +20,7 @@ export class ProfileResolver {
 			'avatar',
 			{ type: () => GraphQLUpload },
 			new FilePipe({
-				allowedMimeTypes: AVATAR_MIME_TYPES,
+				allowedMimeTypes: IMAGE_MIME_TYPES,
 				maxFileSize: parseInt(process.env['MAX_AVATAR_SIZE'] ?? '5242880')
 			})
 		)

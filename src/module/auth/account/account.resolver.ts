@@ -7,6 +7,7 @@ import { MessageModel } from '../../../shared/model/message.model'
 import { PrivateUserModel } from '../../../shared/model/user.model'
 import { LoginPipe } from '../../../shared/pipe/login.pipe'
 import { Ctx } from '../../../shared/types/type'
+import { GraphQLNullFields } from '../../../shared/types/util.type'
 import { SessionService } from '../session/session.service'
 
 import { AccountService } from './account.service'
@@ -64,7 +65,9 @@ export class AccountResolver {
 
 	@Authorization()
 	@Query(() => PrivateUserModel)
-	public async me(@CurrentUserId() id: string): Promise<PrivateUserModel> {
+	public async me(
+		@CurrentUserId() id: string
+	): Promise<GraphQLNullFields<PrivateUserModel>> {
 		return this.accountService.me(id)
 	}
 }

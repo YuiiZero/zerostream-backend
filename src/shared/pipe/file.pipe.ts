@@ -48,7 +48,7 @@ export interface FileValidationOptions {
 	readonly allowedMimeTypes: readonly string[]
 }
 
-export const AVATAR_MIME_TYPES = [
+export const IMAGE_MIME_TYPES = [
 	'image/jpeg',
 	'image/png',
 	'image/gif',

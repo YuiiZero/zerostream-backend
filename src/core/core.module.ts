@@ -7,7 +7,6 @@ import { LoggerModule } from 'nestjs-pino'
 
 import { DeactivateAccountResolver } from '../module/account/deactivate/deactivate-account.resolver'
 import { DeactivateAccountService } from '../module/account/deactivate/deactivate-account.service'
-import { ProfileModule } from '../module/account/profile/profile.module'
 import { ProfileResolver } from '../module/account/profile/profile.resolver'
 import { ProfileService } from '../module/account/profile/profile.service'
 import { RecoveryResolver } from '../module/account/recovery/recovery.resolver'
@@ -20,7 +19,6 @@ import { SessionResolver } from '../module/auth/session/session.resolver'
 import { SessionService } from '../module/auth/session/session.service'
 import { TotpResolver } from '../module/auth/totp/totp.resolver'
 import { TotpService } from '../module/auth/totp/totp.service'
-import { CronModule } from '../module/cron/cron.module'
 import { CronService } from '../module/cron/cron.service'
 import { CredentialsModule } from '../module/global/credentials/credentials.module'
 import { CredentialsService } from '../module/global/credentials/credentials.service'
@@ -32,6 +30,11 @@ import { UserModule } from '../module/global/user/user.module'
 import { UserService } from '../module/global/user/user.service'
 import { MailModule } from '../module/mail/mail.module'
 import { MailResolver } from '../module/mail/mail.resolver'
+import { StreamResolver } from '../module/stream/stream.resolver'
+import { StreamService } from '../module/stream/stream.service'
+import { TestResolver } from '../module/test/test.resolver'
+import { TestService } from '../module/test/test.service'
+import { UploadService } from '../module/upload/upload.service'
 
 import { getGraphqlConf } from './conf/getGraphqlConf'
 import { getPinoHttpConfig } from './conf/getPinoHttpConf'
@@ -59,14 +62,12 @@ import { StorageService } from './module/storage/storage.service'
 		TokenModule,
 		UserModule,
 		ScheduleModule.forRoot(),
-		CronModule,
 		CredentialsModule,
 		EncryptionModule,
 		LoggerModule.forRoot({
 			pinoHttp: getPinoHttpConfig()
 		}),
-		StorageModule,
-		ProfileModule
+		StorageModule
 	],
 	providers: [
 		AccountResolver,
@@ -89,7 +90,12 @@ import { StorageService } from './module/storage/storage.service'
 		EncryptionService,
 		StorageService,
 		ProfileResolver,
-		ProfileService
+		ProfileService,
+		StreamResolver,
+		StreamService,
+		TestService,
+		TestResolver,
+		UploadService
 	]
 })
 export class CoreModule {}

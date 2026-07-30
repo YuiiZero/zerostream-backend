@@ -12,15 +12,16 @@ export const getPinoHttpConfig = (): Params['pinoHttp'] => ({
 
 		return requestId
 	},
-	transport: process.stdout.isTTY
+	transport: isDev()
 		? {
-				target: 'pino-pretty',
-				options: {
-					colorize: true,
-					crlf: os.type() === 'Windows_NT',
-					translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l'
-				}
-			}
+			   // resolve to the actual module path so pino can load the ESM/CJS entry correctly
+			   target: require.resolve('pino-pretty'),
+			   options: {
+				   colorize: true,
+				   crlf: os.type() === 'Windows_NT',
+				   translateTime: 'SYS:yyyy-mm-dd HH:MM:ss.l'
+			   }
+		   }
 		: undefined,
 	level: isDev() ? 'debug' : 'info',
 	redact: {

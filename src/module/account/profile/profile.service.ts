@@ -7,79 +7,55 @@ import { ConfigService } from '@nestjs/config'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client'
 import { FileUpload } from 'graphql-upload-ts'
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
-import sharp from 'sharp'
 
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
-import { StorageService } from '../../../core/module/storage/storage.service'
 import { handleException } from '../../../shared/util/handleException.util'
 import { UserService } from '../../global/user/user.service'
+import { UploadType } from '../../upload/interface/upload.interface'
+import { UploadService } from '../../upload/upload.service'
 
 import { UpdateProfileInfoInput } from './input/update-profile-info.input'
 
 @Injectable()
 export class ProfileService {
 	public constructor(
-		private readonly storageService: StorageService,
 		private readonly prismaService: PrismaService,
 		private readonly userService: UserService,
 		@InjectPinoLogger(ProfileService.name)
 		private readonly logger: PinoLogger,
-		private readonly configService: ConfigService
+		private readonly configService: ConfigService,
+		private readonly uploadService: UploadService
 	) {}
 
 	public async updateAvatar(userId: string, file: FileUpload): Promise<void> {
+		this.logger.info({ userId }, 'Started updating avatar')
+
 		try {
-			const { avatar, id } = await this.userService.getUnique('id', userId)
-
-			if (!file) throw new Error('Avatar file is required')
-
-			const chunks: Buffer[] = []
-
-			for await (const chunk of file.createReadStream()) chunks.push(chunk)
-
-			const buffer = await sharp(Buffer.concat(chunks), {
-				animated: file.mimetype === 'image/gif'
-			})
-				.resize(512, 512, {
-					fit: 'cover',
-					position: 'centre'
-				})
-				.webp()
-				.toBuffer()
-			const path = `avatars/${id}.webp`
-
-			await this.prismaService.user.update({
-				where: { id },
-				data: {
-					avatar: path
-				}
+			await this.uploadService.uploadWebpImage({
+				userId,
+				file,
+				uploadType: UploadType.AVATAR
 			})
 
-			if (avatar) await this.storageService.remove(avatar)
-
-			await this.storageService.upload({
-				payload: buffer,
-				key: path,
-				mimetype: 'image/webp'
-			})
+			this.logger.info({ userId }, 'Avatar updated')
 		} catch (error) {
-			handleException(this.logger, error, 'Failed to execute updateAvatar')
+			handleException(this.logger, error, 'Failed updating avatar')
 		}
 	}
 
 	public async deleteAvatar(userId: string): Promise<void> {
+		this.logger.info({ userId }, 'Started deleting avatar')
+
 		try {
-			const { id, avatar } = await this.userService.getUnique('id', userId)
+			const { avatar } = await this.userService.getUnique('id', userId)
 
 			if (!avatar) return
 
-			await this.storageService.remove(avatar)
-			await this.prismaService.user.update({
-				where: { id },
-				data: { avatar: null }
-			})
+			await this.uploadService.removeUploaded(userId, UploadType.AVATAR)
+
+			this.logger.info({ userId }, 'Avatar deleted')
 		} catch (error) {
-			handleException(this.logger, error, 'Failed to execute deleteAvatar')
+			handleException(this.logger, error, 'Failed deleting avatar')
 		}
 	}
 
@@ -87,7 +63,8 @@ export class ProfileService {
 		userId: string,
 		input: UpdateProfileInfoInput
 	) {
-		this.logger.info({ userId })
+		this.logger.info({ userId }, 'Started updating profile info')
+
 		try {
 			const { bio, nickname, socialLinks } = input
 			const data: UpdateProfileInfoInput = {}
@@ -110,15 +87,18 @@ export class ProfileService {
 				where: { id: userId },
 				data
 			})
+
+			this.logger.info({ userId }, 'Profile info updated')
 		} catch (error) {
 			if (
 				error instanceof PrismaClientKnownRequestError &&
 				error.code === 'P2025'
 			) {
 				this.logger.error('User not found')
+
 				throw new NotFoundException('User not found')
 			}
-			handleException(this.logger, error, 'Failed executing changeInfo')
+			handleException(this.logger, error, 'Failed updating profile info')
 		}
 	}
 }

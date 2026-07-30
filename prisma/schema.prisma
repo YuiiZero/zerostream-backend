@@ -24,6 +24,7 @@ model User {
   isEmailVerified Boolean @default(false) @map("is_email_verified")
 
   tokens Token[]
+  stream Stream?
 
   isTotpEnabled Boolean @default(false) @map("is_totp_enabled")
   encryptedTotpSecret String? @map("totp_secret")
@@ -57,6 +58,27 @@ model Token {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("token")
+}
+
+model Stream {
+  id String @default(uuid()) @id
+
+  title String
+  thumbnailUrl String?
+
+  ingressId String? @unique @map("ingress_id")
+  streamKey String? @map("stream_key")
+  serverUrl String? @map("server_url")
+
+  isLive Boolean @default(false) @map("is_live")
+
+  user User? @relation(references: [id], fields: [userId], onDelete: Cascade)
+  userId String @unique
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("stream")
 }
 
 enum TokenType {

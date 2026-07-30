@@ -1,6 +1,6 @@
 import { Field, GraphQLISODateTime, ObjectType } from '@nestjs/graphql'
 
-import { Nullable } from '../types/type'
+import { StreamModel } from '../../module/stream/model/stream.model'
 
 @ObjectType()
 export class PublicUserModel {
@@ -8,38 +8,44 @@ export class PublicUserModel {
 	username!: string
 
 	@Field(() => String, { nullable: true })
-	nickname?: string | Nullable
+	public nickname?: string
 
 	@Field(() => String, { nullable: true })
-	bio?: string | Nullable
+	public bio?: string
 
 	@Field(() => String, { nullable: true })
-	avatar?: string | Nullable
+	public avatar?: string
 
 	@Field()
-	isVerified!: boolean
+	public isVerified!: boolean
+
+	@Field(() => StreamModel, { nullable: true })
+	public stream?: StreamModel
+
+	@Field(() => [String])
+	public socialLinks!: string[]
 }
 
 @ObjectType()
 export class PrivateUserModel extends PublicUserModel {
 	@Field()
-	id!: string
+	public id!: string
 
 	@Field(() => GraphQLISODateTime)
-	createdAt!: Date
+	public createdAt!: Date
 
 	@Field()
-	isEmailVerified!: boolean
+	public isEmailVerified!: boolean
 
 	@Field()
-	isTotpEnabled!: boolean
+	public isTotpEnabled!: boolean
 
 	@Field()
-	email!: string
+	public email!: string
 }
 
 @ObjectType()
 export class SessionUserModel {
 	@Field()
-	id!: string
+	public id!: string
 }

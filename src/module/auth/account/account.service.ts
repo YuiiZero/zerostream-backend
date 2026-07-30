@@ -8,7 +8,6 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino'
 
 import { User } from '../../../../prisma/generated/prisma/client'
 import { PrismaService } from '../../../core/module/prisma/prisma.service'
-import { PrivateUserModel } from '../../../shared/model/user.model'
 import { handleException } from '../../../shared/util/handleException.util'
 import { VerifyService } from '../../account/verify/verify.service'
 import { UserService } from '../../global/user/user.service'
@@ -16,11 +15,10 @@ import { TotpService } from '../totp/totp.service'
 
 import { LoginInput } from './input/Login.input'
 import { RegisterInput } from './input/Register.input'
-import { AccountServiceInterface } from './interface/account.interface'
 import { RegisterMessageModel } from './model/RegisterUser.model'
 
 @Injectable()
-export class AccountService implements AccountServiceInterface {
+export class AccountService {
 	public constructor(
 		private readonly prismaService: PrismaService,
 		private readonly userService: UserService,
@@ -30,7 +28,7 @@ export class AccountService implements AccountServiceInterface {
 		private readonly logger: PinoLogger
 	) {}
 
-	public me(userId: string): Promise<PrivateUserModel> {
+	public me(userId: string): Promise<User> {
 		return this.userService.getUnique('id', userId)
 	}
 
